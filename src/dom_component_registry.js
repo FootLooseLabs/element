@@ -1,0 +1,33 @@
+import { PostOffice } from "./post_office.js";
+
+class DOMComponentRegistry {
+	static brokerLabel (){return "NewComponentRegistry";}
+
+	static start() {
+		if(DOMComponentRegistry.started){
+			console.log("DOMComponentRegistry already started");
+			return;
+		}
+		PostOffice.registerBroker(this, DOMComponentRegistry.brokerLabel, (ev)=> {
+			console.log("registering new component - ", ev.detail);
+			// customElements.define(e.detail.name, e.detail._constructor);
+		});
+		// console.log("imp:", "REGISTERED BROKER === ", DOMComponentRegistry.brokerLabel);
+		DOMComponentRegistry.started = true;
+	}
+
+	static add(webComp){
+		// customElements.define(webComp.domElName, webComp);
+		DOMComponentRegistry.components.push(webComp.domElName);
+		PostOffice.broadcastMsg(DOMComponentRegistry.brokerLabel,{name: webComp.domElName}, document);
+	}
+	static list(){
+		return this.components;
+	}
+}
+
+DOMComponentRegistry.components = [];
+
+export {
+	DOMComponentRegistry
+}

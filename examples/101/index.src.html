@@ -1,0 +1,86 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+    <title>c</title>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="description" content="muffin example app 001" />
+    <meta charset="utf-8" />
+
+    <script type="text/javascript" src="../dist/js/muffin.js"></script>
+</head>
+
+<body>
+    <div class="page-wrapper toggled">
+
+
+        <div style="position: fixed; right: 50px; top: 9px; width: 200px; opacity: 0.5; z-index: 999;">
+            <img src="/assets/imgs/client/client_logo.png" class="w100" alt="Narayana Hrudalaya Logo">
+        </div>
+
+        <div id="sidebar-wrapper">
+
+            <div class="row m0 mt30 center">
+                <div class="col-12">
+                    <img src="https://www.stickpng.com/assets/images/585e4bc4cb11b227491c3395.png" class="img-thumbnail" alt="Priya Prakash" style="height: 77px;">
+                </div>
+                <div class="col-12">
+                    <p class="white-text mt10 mb0">SF:i</p>
+                    <p class="white-text mt10" style="font-size: 0.75em;">07-11-19</p>
+                </div>
+            </div>
+
+            <div class="row m0 align-vertical-center" style="margin-top: -75%;">
+                <div class="col-12 center _nav-link p20" data-toggle="dashboard" onclick="_router.go('dashboard');">
+                    <a href="#">
+                        <div class="white-text">
+                            <i class="fas fa-eye fa-2x"></i>
+                            <p class="mt5 mb0 tx-lg">Operation</p>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-12 center _nav-link p20 mt30" data-toggle="inventory" onclick="_router.go('inventory');">
+                    <a href="#">
+                        <div class="white-text">
+                            <i class="fas fa-plus fa-2x"></i>
+                            <p class="mt5 mb0 tx-lg">inventory</p>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-12 center _nav-link p20 mt30" data-toggle="logs" onclick="_router.go('logs');">
+                    <a href="#">
+                        <div class="white-text">
+                            <i class="fas fa-book fa-2x"></i>
+                            <p class="mt5 mb0 tx-lg">Logs</p>
+                        </div>
+                    </a>
+                </div>
+            </div>
+            <ul class="sidebar-nav">
+                <li class="sidebar-brand tx-sm ml10" style="position: fixed; bottom: 0;">
+                    <a href="#">
+                         © FootLoose Labs 2020
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="content-wrapper">
+            <include src="pages/dashboard.html"></include>
+            <include src="pages/inventory.html"></include>
+        </div>
+    </div>
+
+    <script src="./node_modules/localforage/dist/localforage.js"></script>
+
+    <script type="text/javascript">
+        var routeOpts = [
+        ];
+        var _router = new Router();
+        _router.addRouteConfig(routeOpts);
+    </script>
+
+</body>
+
+</html>
