@@ -1,7 +1,7 @@
 Documentation of the current frontend framework in use in development → 
 
 
-Quickstart <br/>
+<h2> Quickstart </h2>
 
   <h4>Install Globally</h4>
   <code>
@@ -20,7 +20,8 @@ Quickstart <br/>
   </code>
 
 
-Project structure 
+</br>
+<h2>Project structure </h2>
 
   
 <table>
@@ -61,8 +62,8 @@ Project structure
   </tr>
 </table>
 
-
-Javascript Interface
+</br>
+<h3>Javascript Interface</h3>
 
 1. DomComponent
 
@@ -72,21 +73,25 @@ Javascript Interface
 
 4. Router
 
-Prebuilt Tags
+
+<h3>Prebuilt Tags</h3>
 
 1. <include src="”></include>
 
 2. <component-data src="”></component-data>
 
-Prebuilt HTML Attributes 
+<h3>Prebuilt HTML Attributes</h3>
 
 1. route="<string>”
 
 2. sub-route
 
-CSS interface
+<h3>CSS interface</h3>
 
 1. .page class
+
+
+</br>
 
 ## Examples -
 
