@@ -1,15 +1,16 @@
 Documentation of the current frontend framework in use in development → 
 
 
-QUickstart
-  Install Globally
+Quickstart <br/>
+
+  <h4>Install Globally<h4>
   <code>
     1. npm run build
 
     2. sudo npm -g install .
   </code>
 
-  Create a new Project 
+  <h4>Create a new Project</h4>
   <code>
     1. mkdir newProject && cd newProject
 
