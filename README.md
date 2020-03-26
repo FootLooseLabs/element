@@ -6,7 +6,7 @@ Quickstart <br/>
   <h4>Install Globally</h4>
   <code>
     1. npm run build
-  </code>
+  </code> <br/>
   <code>
     2. sudo npm -g install .
   </code>
@@ -14,7 +14,7 @@ Quickstart <br/>
   <h4>Create a new Project</h4>
   <code>
     1. mkdir newProject && cd newProject
-  </code>
+  </code> <br/>
   <code>
     2. muffin -i   //press enter for any prompt to take the default value 
   </code>
