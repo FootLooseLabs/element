@@ -1,5 +1,22 @@
 Documentation of the current frontend framework in use in development → 
 
+
+QUickstart
+  Install Globally
+  <code>
+    1. npm run build
+
+    2. sudo npm -g install .
+  </code>
+
+  Create a new Project 
+  <code>
+    1. mkdir newProject && cd newProject
+
+    2. muffin -i   //press enter for any prompt to take the default value 
+  </code>
+
+
 Project structure 
 
   
