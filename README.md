@@ -2,16 +2,42 @@ Documentation of the current frontend framework in use in development →
 
 Project structure 
 
+  
 <table>
   <tr>
     <td>/ 
-  assets/
-  components/
-  pages/
-  gulpfile.js
-  index.src.html
-  package.json
-  sw.js</td>
+      assets/
+    </td>
+  </tr>
+  <tr>
+    <td>
+        components/
+    </td>
+  </tr>
+  <tr>
+    <td>
+        pages/
+    </td>
+  </tr>
+  <tr>
+    <td>
+        gulpfile.js
+    </td>
+  </tr>
+  <tr>
+    <td>
+        index.src.html
+    </td>
+  </tr>
+  <tr>
+    <td>
+        package.json
+    </td>
+  </tr>
+  <tr>
+    <td>
+        sw.js
+    </td>
   </tr>
 </table>
 
@@ -54,8 +80,19 @@ CSS interface
   <tr>
     <td>class ContactCard extends DomComponent {
     static domElName = "contact-card"   
-        static schema = {                                    “name”: “”,                                     “email”: “”,                                     “phone_no”: “”                             }
-    static markupFunc  = (data) => {                  return `<h1>${data.name}</h1>                            <h3 class=”contact”>                                  ${data. email} <br/>                                   ${data.phone_no}                            </h3>`    }
+    
+    static schema = {
+                                    “name”: “”, 
+                                    “email”: “”, 
+                                    “phone_no”: “”
+                             }
+    static markupFunc  = (data) => { 
+                 return `<h1>${data.name}</h1>
+                            <h3 class=”contact”>
+                                  ${data. email} <br/> 
+                                  ${data.phone_no}
+                            </h3>`
+    }
 
 }
 
@@ -87,7 +124,10 @@ the last line (customElements.define) registers the component for use in html/do
     <div class="....”>
 <contact-card>
      <component-data socket=”” label=””>
-               {                    "name”:”ankur”,                                          “email”:”ankur@footloose.io”,                     “phone_no”:”+919686800032”
+               {
+                    "name”:”ankur”,                      
+                    “email”:”ankur@footloose.io”, 
+                    “phone_no”:”+919686800032”
                } 
       </component-data>
 </contact-card>
@@ -120,18 +160,28 @@ any fixtures to quick test the component could be added as json inside component
     <div route="contact-page””>
 <contact-card>
      <component-data socket=”” label=””>
-               {                    "name”:”ankur”,                                          “email”:”ankur@footloose.io”,                     “phone_no”:”+919686800032”
+               {
+                    "name”:”ankur”,                      
+                    “email”:”ankur@footloose.io”, 
+                    “phone_no”:”+919686800032”
                } 
       </component-data>
 </contact-card>
 
-<button onclick=”_router.go(‘about-page’)”>     about</button>
+<button onclick=”_router.go(‘about-page’)”>
+     about
+</button>
     </div>
  
      <div route=”about-page”>
          <h2>About Page</h2>
-     </div>     <script type=”text/javascript”>         var _router = new Router();
-         document.onload = (ev) => {             _router.go(“contact-page”);         }
+     </div>
+
+     <script type=”text/javascript”>
+         var _router = new Router();
+         document.onload = (ev) => {
+             _router.go(“contact-page”);
+         }
     </script>
 </body> </td>
     <td>route=”..string..” attribute specifies the unique route (url pathname & window.history entry)
@@ -156,13 +206,19 @@ _router.go(“..route_name..”) function triggers the route with the given ..ro
    </head>
 
 <body>
-    <div route="contact-page””>         <include src=”pages/contact.html”></include>
+    <div route="contact-page””>
+         <include src=”pages/contact.html”></include>
     </div>
  
      <div route=”about-page”>
           <include src=”pages/about.html”></include>
-     </div>     <script type=”text/javascript”>         var _router = new Router();
-         document.onload = (ev) => {             _router.go("contact-page”);         }
+     </div>
+
+     <script type=”text/javascript”>
+         var _router = new Router();
+         document.onload = (ev) => {
+             _router.go("contact-page”);
+         }
     </script>
 </body> </td>
     <td><include src=”...”> tag loads the html template file at the path specified in its src attribute</td>
@@ -183,10 +239,17 @@ _router.go(“..route_name..”) function triggers the route with the given ..ro
 <div class=”_container_”>
 <contact-card>
 <component-data socket=”” label=””>
-               {                    "name”:”ankur”,                                          “email”:”ankur@footloose.io”,                     “phone_no”:”+919686800032”
+               {
+                    "name”:”ankur”,                      
+                    “email”:”ankur@footloose.io”, 
+                    “phone_no”:”+919686800032”
                } 
  </component-data>
-</contact-card><button onclick=”_router.go(‘about-page’)”>     about</button>
+</contact-card>
+
+<button onclick=”_router.go(‘about-page’)”>
+     about
+</button>
            </div>
 </template></td>
     <td>any file included via <include src=”....”> has to be enclosed within the <template> tag; that can contain html, css & javascript.</td>
