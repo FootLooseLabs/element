@@ -1,13 +1,14 @@
 import { PostOffice } from "./post_office.js";
-var localforage = require(["/node_modules/localforage/dist/localforage.js"]);
-// import * as localForage from "localforage";
+// var localforage = require(["/node_modules/localforage/dist/localforage.js"]);
+// import localforage from "/node_modules/localforage/src/localforage.js";
+import "localforage";
 
 class DataSource{
 
 	constructor(label, socket, _cmp) {
 		// Object.defineProperty(this, 'data', {
-	 //        get: this._get
-	 //    });
+		//    get: this._get
+		// });
 	    this.socket = socket ? PostOffice.sockets[socket] : null;
 	    this.label = label;
 	    this.events = [];
@@ -102,7 +103,6 @@ class DataSource{
 		this._updateData(_data);
 	}
 }
-
 
 export {
 	DataSource

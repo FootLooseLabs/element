@@ -85,7 +85,7 @@ Router.prototype.togglePage = function(target_page, target_route){
 Router.prototype.onStateChange = function(ev){
 	var _this = this;
 	// var e = e.detail ? e.detail.srcEvent : e;
-	eee = ev;
+	// eee = ev;
 	var state = ev.detail.state || {name: _this.getDefaultRoute().name};
 	console.log('state changing to - ', state.name);
  

@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
 var fs = require("fs");
-const { execSync } = require("child_process");
 
 var { generateMarkup } = require("./utils.js");
 var { createComponent } = require("./create_component.js");
@@ -198,34 +197,12 @@ var createProjectFolders = (opt) => {
 	});
 }
 
-
-
-var runCmd = (cmd, logMsg) => {
-	if(!logMsg) { console.log("running: ", cmd); }
-	else { console.log(logMsg); }
-	execSync(cmd, (error, stdout, stderr) => {
-	    if (error) {
-	        console.log(`error: ${error.message}`);
-	        return;
-	    }
-	    if (stderr) {
-	        console.log(`stderr: ${stderr}`);
-	        return;
-	    }
-	    console.log(`stdout: ${stdout}`);
-	});
-}
-
-
 var initApp = (opt) => {
 	var opt = opt || {};
 	// console.log("OPT == ", opt);
 	createProjectFolders(opt);
 	createProjectFiles(opt);
 	createComponent();
-	runCmd("npm install");
-	runCmd("npm run build");
-	runCmd("python -m SimpleHTTPServer 8000", "app running on http://localhost:8000");
 }
 
 module.exports = {

@@ -133,7 +133,7 @@ function initComponentsInFrag(frag){
 	if(cmp.length < 1){return;}
 	cmp.forEach(function(el,i){
 		// console.log(el.getAttribute('name'));
-		_src = el.getAttribute('src');
+		var _src = el.getAttribute('src');
 		if(_src){
 			console.log('initializing include - ', el, ' inside - ', frag);
 			var is_child_comp = frag != document ? true : false;
