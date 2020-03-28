@@ -26,7 +26,12 @@ class DOMComponentRegistry {
 	}
 
 	static register(webComp) {
-		customElements.define(webComp.domElName(), webComp);
+		if(typeof webComp.domElName == "function"){
+			var webCompDomName = webComp.domElName();
+		}else{
+			var webCompDomName = webComp.domElName;
+		}
+		customElements.define(webCompDomName, webComp);
 		DOMComponentRegistry.add(webComp);
 	}
 }

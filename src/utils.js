@@ -18,7 +18,13 @@ var triggerCustomEvent = function(target, eventName, details){
 }
 
 
-function stringToDocFrag(html_string) {
+function stringToHTMLFrag(strHTML) {   //output diff from stringToDocFrag: that always returns the full html page structure (with head & body)
+    var temp = document.createElement('template');
+    temp.innerHTML = strHTML;
+    return temp.content;
+}
+
+function stringToDocFrag(html_string) {  //can be removed eventually if stringToHTMLFrag works for all cases
      var dom = null;
      if (window.DOMParser) {
         try { 
@@ -158,6 +164,7 @@ function send_ajax(target_url,method,success_callback,formdata,error_callback,bu
 export {
   randomString, 
   triggerCustomEvent,
+  stringToHTMLFrag,
   stringToDocFrag,
   send_ajax
 }

@@ -2,6 +2,7 @@ import { randomString } from "./utils.js";
 import { DOMComponentRegistry } from "./dom_component_registry.js";
 import { PostOffice } from "./post_office.js";
 import { DataSource } from "./data_source.js";
+import { stringToHTMLFrag } from "./utils.js";
 
 class DOMComponent extends HTMLElement {
 
@@ -101,12 +102,6 @@ class DOMComponent extends HTMLElement {
 					_this.processCmpData(_val);
 					_this.render();
 				})
-					// _data_promise.then((data)=>{
-					// 	var dataJson = JSON.parse(data).data;
-					// 	TRASH_SCOPE.dataJson = dataJson;
-					// 	_this.processCmpData(dataJson); //needs to be generalised (remove 'trays' key post that)
-					// 	_this.render();
-				// });
 			}catch(e){
 				console.log("imp:","(ERROR) - ", e);
 			}
@@ -140,18 +135,36 @@ class DOMComponent extends HTMLElement {
 
 	render() {
 		console.log("----------rendering component start---------------");
+		var _this = this;
 		TRASH_SCOPE.____data = this.data;
 		var _rendered = this.markupFunc.call(this, this.data, this.uid);
-				// this.shadow.innerHTML = _rendered;
+		// this.shadow.innerHTML = _rendered;
+
+		// console.log("imp:","rendered markupFunc");
+		this._renderedFrag = stringToHTMLFrag(_rendered);
+		// console.log("imp:","rendered fragment");
+		this._renderedFrag.firstElementChild.dataset.component = this.uid;
+
+		this._renderedFrag.querySelectorAll("[on-change]").forEach((_el)=>{
+			_el.onchange = function() {
+				// _el.attributes["on-change"].value.call(_this);
+				_this[_el.attributes["on-change"].value].call(_this);
+			}
+		});
+		// console.log("imp:","renderered fragment uid");
 		var cmp_dom_node = this._getDomNode();
 		try{
 			if(cmp_dom_node){
-				cmp_dom_node.outerHTML = _rendered;
+				// cmp_dom_node.outerHTML = _rendered;
+				cmp_dom_node.replaceWith(this._renderedFrag); //case when a rendered custom element re-rendering (after some data update)
 			}else{
-				this.outerHTML = _rendered; //case when custom element in the html is rendered for the 1st time
+				// this.outerHTML = _rendered; //case when custom element in the html is rendered for the 1st time
+				this.replaceWith(this._renderedFrag);
 			}
+			// console.log("imp:","cmpdomnode = ", cmp_dom_node);
+			
 		}catch(e){
-			console.log("imp","(ERROR) - component rendering failed with the following error - \n", e);
+			console.log("imp:","(ERROR) - component rendering failed with the following error - \n", e);
 		}
 		TRASH_SCOPE.debugRenderedCmp = this;
 		console.log("----------rendering component end-----------------");
@@ -164,7 +177,7 @@ class DOMComponent extends HTMLElement {
 	
 }
 
-DOMComponent.prototype._binding = function(b) { //rollup gives build error in var _this = this --> if this is an arrow function
+DOMComponent.prototype._binding = function(b) {
     var _this = this;
     this.element = b.element;    
     this.value = b.object[b.property];
