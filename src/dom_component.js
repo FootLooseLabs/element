@@ -133,6 +133,26 @@ class DOMComponent extends HTMLElement {
 		}
 	}
 
+	__processRenderedFragEventListeners () {
+		var _this = this;
+		this._renderedFrag.querySelectorAll("[on-change]").forEach((_el)=>{
+			_el.onchange = function() {
+				// _el.attributes["on-change"].value.call(_this);
+				_this[_el.attributes["on-change"].value].call(_this, _el);
+			}
+		});
+		this._renderedFrag.querySelectorAll("[on-input]").forEach((_el)=>{
+			_el.onchange = function() {
+				_this[_el.attributes["on-input"].value].call(_this, _el);
+			}
+		});
+		this._renderedFrag.querySelectorAll("[on-click]").forEach((_el)=>{
+			_el.onchange = function() {
+				_this[_el.attributes["on-click"].value].call(_this, _el);
+			}
+		});
+	}
+
 	render() {
 		console.log("----------rendering component start---------------");
 		var _this = this;
@@ -145,12 +165,7 @@ class DOMComponent extends HTMLElement {
 		// console.log("imp:","rendered fragment");
 		this._renderedFrag.firstElementChild.dataset.component = this.uid;
 
-		this._renderedFrag.querySelectorAll("[on-change]").forEach((_el)=>{
-			_el.onchange = function() {
-				// _el.attributes["on-change"].value.call(_this);
-				_this[_el.attributes["on-change"].value].call(_this);
-			}
-		});
+		this.__processRenderedFragEventListeners();
 		// console.log("imp:","renderered fragment uid");
 		var cmp_dom_node = this._getDomNode();
 		try{
