@@ -103,12 +103,19 @@ Router.prototype.onStateChange = function(ev){
 	this.togglePage(target_page, target_route);
 
 	target_route.active = true;
-	target_route.onload ? target_route.onload.call(_this, target_page) : null;
+	this._onload(target_route, target_page);
 
 	this.active_route = target_route.name;
 	console.log('state changed to - ', this.active_route);
 }
 
+
+Router.prototype._onload = function(target_route, target_page){
+	window.scrollTo(0,0);
+	if(target_route.onload){
+		target_route.onload.call(this, target_page);
+	}
+}
 
 Router.prototype.triggerCustomEvent = function(target, eventName, details){
   if(!target){return;}
