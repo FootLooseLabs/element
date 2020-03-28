@@ -16,6 +16,8 @@ class DOMComponent extends HTMLElement {
 				]
 	}
 
+	static get observedAttributes() { return ['data-update']; }
+
 	constructor(opt){
 		super();
 		console.log("arguments - ", arguments);
@@ -27,10 +29,17 @@ class DOMComponent extends HTMLElement {
 		this.data = this.constructor.schema || {};
 		this.domElName = this.constructor.domElName || opt.domElName;
 		this.uid = randomString(8);
-
 		this.data_src = null;
+		this.opt = opt;
+	}
 
+
+	connectedCallback() {
+		var opt = this.opt;
 		this.__init__(opt);
+		if(this.onConnect) {
+			this.onConnect.call(this);
+		}
 	}
 
 	__init__(opt) {
@@ -142,11 +151,15 @@ class DOMComponent extends HTMLElement {
 				this.outerHTML = _rendered; //case when custom element in the html is rendered for the 1st time
 			}
 		}catch(e){
-			console.log("(ERROR) - component rendering failed with the following error - \n", e);
+			console.log("imp","(ERROR) - component rendering failed with the following error - \n", e);
 		}
 		TRASH_SCOPE.debugRenderedCmp = this;
 		console.log("----------rendering component end-----------------");
 		return this
+	}
+
+	attributeChangedCallback () {
+		this.render();
 	}
 	
 }

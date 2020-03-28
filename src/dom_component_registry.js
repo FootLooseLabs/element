@@ -8,7 +8,7 @@ class DOMComponentRegistry {
 			console.log("DOMComponentRegistry already started");
 			return;
 		}
-		PostOffice.registerBroker(this, DOMComponentRegistry.brokerLabel, (ev)=> {
+		PostOffice.registerBroker(this, DOMComponentRegistry.brokerLabel(), (ev)=> {
 			console.log("registering new component - ", ev.detail);
 			// customElements.define(e.detail.name, e.detail._constructor);
 		});
@@ -18,11 +18,16 @@ class DOMComponentRegistry {
 
 	static add(webComp){
 		// customElements.define(webComp.domElName, webComp);
-		DOMComponentRegistry.components.push(webComp.domElName);
-		PostOffice.broadcastMsg(DOMComponentRegistry.brokerLabel,{name: webComp.domElName}, document);
+		DOMComponentRegistry.components.push({name:webComp.domElName, uid: webComp.uid});
+		PostOffice.broadcastMsg(DOMComponentRegistry.brokerLabel(),{name: webComp.domElName}, document);
 	}
 	static list(){
 		return this.components;
+	}
+
+	static register(webComp) {
+		customElements.define(webComp.domElName(), webComp);
+		DOMComponentRegistry.add(webComp);
 	}
 }
 

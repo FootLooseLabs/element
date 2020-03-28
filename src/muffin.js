@@ -12,7 +12,7 @@ window.TRASH_SCOPE = {};
 
 import { DOMComponentRegistry, DataSource, PostOffice, DOMComponent } from "./dom_component.js";
 import { Router } from "./router.js";
-import { IncludeFrag } from "./include.js";
+import "./include.js";
 
 DOMComponentRegistry.start();
 window.Router = Router;
@@ -20,3 +20,4 @@ window.PostOffice = PostOffice;
 window.DOMComponentRegistry = DOMComponentRegistry;
 window.DataSource = DataSource;
 window.DOMComponent = DOMComponent;
+// window.IncludeFrag = IncludeFrag;

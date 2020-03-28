@@ -157,6 +157,7 @@ Router.prototype.back = function(){
 
 Router.prototype.isSubRoute = function(route_name){
 	var _route_el = this.containment.querySelector('[route='+route_name+']');
+	if(!_route_el){return false;}
 	return _route_el.hasAttribute('sub-route') ? true : false;
 }
 
