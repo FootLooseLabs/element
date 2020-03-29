@@ -46,6 +46,7 @@ class DOMComponent extends HTMLElement {
 	__init__(opt) {
 		console.log("consoling ---> ", opt);	
 		var _this = this;
+		this._initLogging();
 		this._initComponentDataSrc(opt);
 		this.shadow = this.attachShadow({mode: opt.domMode || "open"});
 		this.markupFunc = this.constructor.markupFunc || opt.markupFunc;
@@ -61,6 +62,10 @@ class DOMComponent extends HTMLElement {
 		}
 		this.render();
 		this._init_lifecycle(opt);
+	}
+
+	_initLogging() {
+		console.group(this.domElName + " - " + this.uid);		
 	}
 
 	_isDebuggale() {
@@ -95,13 +100,15 @@ class DOMComponent extends HTMLElement {
 	__initDataSrcBroker(label,cb,scope) {
 		var _this = this;
 		this.broker = PostOffice.registerBroker(_this, label, (ev)=> {
-			console.log("imp:",_this.label,"- ","component data update signal received");
+			console.log("imp:",_this.data_src.label,"- ","component data update signal received");
 			try{
-				var _newData = _this.data_src._get();
-				_newData.then((_val)=>{
-					_this.processCmpData(_val);
-					_this.render();
-				})
+				// var _newData = _this.data_src._get();
+				// _newData.then((_val)=>{
+				// 	_this.processCmpData.call(_this,_val);
+				// 	_this.render();
+				// })
+				_this.processCmpData.call(_this, _this.data_src.data);
+				_this.render();
 			}catch(e){
 				console.log("imp:","(ERROR) - ", e);
 			}
@@ -183,6 +190,8 @@ class DOMComponent extends HTMLElement {
 		}
 		TRASH_SCOPE.debugRenderedCmp = this;
 		console.log("----------rendering component end-----------------");
+		
+		console.groupEnd();
 		return this
 	}
 

@@ -4,7 +4,11 @@ window.TRASH_SCOPE = {};
 (() => {
 	var __log = console.log;
 	console.log = function() {
-		if(arguments[0]==="imp:"){__log.apply(this, arguments);}
+		if(arguments[0]==="imp:"){
+			var argumentsArr = Array.prototype.slice.call(arguments);
+			var msgArr = argumentsArr.slice(1,argumentsArr.length)
+			__log.apply(this, msgArr);
+		}
 		if(window.LOGGING_LEVEL !== "DEBUG"){return;}
     	__log.apply(this, arguments);
 	}
