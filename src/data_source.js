@@ -21,30 +21,13 @@ class DataSource{
 		this._initLogging();
 
 		if(!this.socket){
-			this._log("no datasource initialised for - ", this.label);
+			this._log("initialisation skipped; _reason_: no socket attribute defined;");
 		}
 
-		var _this = this;
-
-		localforage.getItem(this.label).then((value) => {
-			if(!value){
-				_this._loadFixtures();
-				return;
-			}
-			_this.data = value;
-            _this._log('imp:', 'got locally stored data for: ', _this.label);
-        }).catch((err) => {
-            _this._log('imp:', 'Could not get data for:', _this.label, ",coz of the error === ", err);
-            _this._loadFixtures(); 
-        });
-
-
-        if(this.socket){
-			this.socket.addEventListener("message", (ev) => {
-				_this._onmsg.call(_this, ev);
-			});
-		}
-		this._log("DataSource initialised for - ", this.label);
+		this._checkLocalDBorFixtures();
+		this._initSocket();
+ 
+		this._log("initialisation successful;");
 	}
 
 
@@ -54,15 +37,57 @@ class DataSource{
 	}
 
 	_log() {
+		var argumentsArr = Array.prototype.slice.call(arguments);
 		if(arguments[0]==="imp:"){
-			var argumentsArr = Array.prototype.slice.call(arguments);
 			var msg = argumentsArr.slice(1,argumentsArr.length).join(" ");
-			// alert(msg);
-			// msgArr.splice(0, 0, this._logPrefix);
-			// msgArr.push(this._logStyle);
-			
 			console.log("imp:", this._logPrefix, this._logStyle, msg);
+		}else{
+			console.log(this._logPrefix, this._logStyle, msg);
 		}
+	}
+
+	_initSocket(){
+		var _this = this;
+		if(this.socket){
+			this.socket.addEventListener("message", (ev) => {
+				_this._onmsg.call(_this, ev);
+			});
+		}
+	}
+
+	_checkLocalDBorFixtures(){
+		var _this = this;
+		localforage.getItem(this.label).then((value) => {
+			if(!value){
+				_this._loadFixtures();
+				return;
+			}
+			_this.data = value;
+            _this._log('imp:', 'got locally stored data');
+        }).catch((err) => {
+            _this._log('imp:', 'error checking locally stored data;', " _reason_: ", err, ";" );
+            _this._loadFixtures(); 
+        });
+	}
+
+	_loadFixtures(){
+		this._log('imp:', "checking for fixtures");
+		if(!this._cmp) {return;}
+    	var _cmp_data = this._cmp._getCmpData();
+    	if(!_cmp_data){return;}
+
+        if(this._cmp._isDebuggale()){
+        	TRASH_SCOPE.cmd_data = _cmp_data.innerHTML;
+        }
+
+        try{
+			var data = JSON.parse(_cmp_data.innerHTML);
+			this._updateData(data);
+			this._log('imp:', "fixtures applied");
+		}catch(e){
+			this._log("imp:", "invalid json in fixtures");
+		}
+		
 	}
 
 	async _get () {
@@ -73,55 +98,44 @@ class DataSource{
 		    return _data;
 		} catch (err) {
 		    this._log("imp:","error in datasource._get --> ",err);
+		    return false;
 		}
 		// return JSON.parse(this.data).data;
 	}
 
-	_loadFixtures () {
-		if(!this._cmp) {return;}
-    	var _cmp_data = this._cmp._getCmpData();
-    	if(!_cmp_data){return;}
-        this._log('imp:', this.label, " --> checking for fixtures");
-        if(this._cmp._isDebuggale()){
-        	TRASH_SCOPE.cmd_data = _cmp_data.innerHTML;
-        }
-        try{
-			var data = JSON.parse(_cmp_data.innerHTML);
-			this._updateData(data);
-			this._log('imp:', this.label, " --> fixtures applied in ", this._cmp);
-		}catch(e){
-			this._log("imp:", this.label, " --> invalid json in component-data fixtures");
-		}
-		
-	}
-
 	_updateData (data) {
+		console.log("attempting data update");
 		var _this = this;
 		if(this._cmp._isDebuggale()){
 			TRASH_SCOPE.cmp_data_src = this;
 		}
 		localforage.setItem(this.label, data).then(function (value) {
 			_this.data = value;
-            _this._log('imp:',_this.label,'- ','updated data in DataSource');
+            _this._log('imp:', 'updated data');
             PostOffice.broadcastMsg(_this.label, _this.data);
         }).catch(function(err) {
-            _this._log('imp:',_this.label,'- ','Could not save data to DataSource:', err);
+            _this._log('imp:','error updating data;', ' _reason_: ', err);
         });
 	}
 
 	_onmsg (ev) {
-		this._log("imp:","datasource got msg - ", ev);
+		console.group("datasource#"+this._cmp.uid + " ("+this._cmp.domElName+")");
+		this._log("imp:", "got msg - ");
 		if(!ev.data){return;}
 		var _data = null;
 		try{
 			_data = JSON.parse(ev.data).data;
 			// JSON.stringify(_data);  // no performance benefit to converting to strings & storing (instead additional steps)
 		}
-		catch(e){
-			this._log("imp:", "socket data received at - ", this.socket, "with label - ", this.label, ", is not valid json");
+		catch(err){
+			this._log("imp:", "socket data received is not valid json;", ' _reason_: ', err);
 		}
 		if(!_data){return;}
+
+		console.dir(_data);
+
 		this._updateData(_data);
+		console.groupEnd()
 	}
 }
 
