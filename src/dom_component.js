@@ -156,20 +156,28 @@ class DOMComponent extends HTMLElement {
 
 	__processRenderedFragEventListeners () {
 		var _this = this;
+		this._events = {
+			"onchange": [],
+			"onclick": [],
+			"oninput": []
+		};
 		this._renderedFrag.querySelectorAll("[on-change]").forEach((_el)=>{
 			_el.onchange = function() {
 				// _el.attributes["on-change"].value.call(_this);
 				_this[_el.attributes["on-change"].value].call(_this, _el);
+				this._events.onchange.push({"el": _el, "cb": _el.attributes["on-change"]});
 			}
 		});
 		this._renderedFrag.querySelectorAll("[on-input]").forEach((_el)=>{
 			_el.onchange = function() {
 				_this[_el.attributes["on-input"].value].call(_this, _el);
+				this._events.onchange.push({"el": _el, "cb": _el.attributes["on-input"]});
 			}
 		});
 		this._renderedFrag.querySelectorAll("[on-click]").forEach((_el)=>{
 			_el.onchange = function() {
 				_this[_el.attributes["on-click"].value].call(_this, _el);
+				this._events.onchange.push({"el": _el, "cb": _el.attributes["on-click"]});
 			}
 		});
 	}
