@@ -68,6 +68,8 @@ class DOMComponent extends HTMLElement {
 
 		this._initLifecycle(opt);
 
+		this._log("imp:", "initialised");
+
 		console.groupEnd();
 	}
 
@@ -165,20 +167,20 @@ class DOMComponent extends HTMLElement {
 			_el.onchange = function() {
 				// _el.attributes["on-change"].value.call(_this);
 				_this[_el.attributes["on-change"].value].call(_this, _el);
-				_this._events.onchange.push({"el": _el, "cb": _el.attributes["on-change"]});
 			}
+			this._events.onchange.push(_el.attributes["on-change"]);
 		});
 		this._renderedFrag.querySelectorAll("[on-input]").forEach((_el)=>{
-			_el.onchange = function() {
+			_el.oninput = function() {
 				_this[_el.attributes["on-input"].value].call(_this, _el);
-				this._events.onchange.push({"el": _el, "cb": _el.attributes["on-input"]});
 			}
+			this._events.onchange.push(_el.attributes["on-input"]);
 		});
 		this._renderedFrag.querySelectorAll("[on-click]").forEach((_el)=>{
-			_el.onchange = function() {
+			_el.onclick = function() {
 				_this[_el.attributes["on-click"].value].call(_this, _el);
-				this._events.onchange.push({"el": _el, "cb": _el.attributes["on-click"]});
 			}
+			this._events.onchange.push(_el.attributes["on-click"]);
 		});
 	}
 
