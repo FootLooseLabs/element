@@ -165,7 +165,7 @@ class DOMComponent extends HTMLElement {
 			_el.onchange = function() {
 				// _el.attributes["on-change"].value.call(_this);
 				_this[_el.attributes["on-change"].value].call(_this, _el);
-				this._events.onchange.push({"el": _el, "cb": _el.attributes["on-change"]});
+				_this._events.onchange.push({"el": _el, "cb": _el.attributes["on-change"]});
 			}
 		});
 		this._renderedFrag.querySelectorAll("[on-input]").forEach((_el)=>{
