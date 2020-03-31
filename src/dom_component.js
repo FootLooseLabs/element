@@ -10,9 +10,7 @@ class DOMComponent extends HTMLElement {
 		return [
 					{
 						label: "dataChange", 
-						callback: () => {
-							this.render
-						}
+						cb: "render"
 					}
 				]
 	}
@@ -21,8 +19,6 @@ class DOMComponent extends HTMLElement {
 
 	constructor(opt){
 		super();
-		console.log("arguments - ", arguments);
-		console.log("this - ", this);
 		if(this._isDebuggale()){
 			TRASH_SCOPE._debugCmp = this;
 		}
@@ -43,29 +39,52 @@ class DOMComponent extends HTMLElement {
 		}
 	}
 
+	_onDataSrcUpdate(ev) {
+		this._log("imp:",this.data_src.label,"- ","component data update signal received");
+		this.render();
+	}
+
+	attributeChangedCallback () {
+		this.render();
+	}
+
 	__init__(opt) {
-		console.log("consoling ---> ", opt);	
 		var _this = this;
 		this._initLogging();
-		this._initComponentDataSrc(opt);
+
+		this._log("imp:","DOMELName = ", this.domElName);
+		this._log("imp:","component data/schema = ");
+		console.dir(this.data);
+		this._log("initialising with ", opt);
+
 		this.shadow = this.attachShadow({mode: opt.domMode || "open"});
 		this.markupFunc = this.constructor.markupFunc || opt.markupFunc;
 		this.processData = this.constructor.processData || opt.processData;
-		if(document.readyState == "complete"){
-			DOMComponentRegistry.add(this);
-		}else{
-			document.addEventListener("DOMContentLoaded", ()=>{DOMComponentRegistry.add(_this);});
-		}
+	
 		if(!this.markupFunc){
-			console.log("----------no markupFunc found---------------");
+			this._log("----------initialisation stopped - no markupFunc found---------------");
 			return;
 		}
-		this.render();
-		this._init_lifecycle(opt);
+
+		this._initLifecycle(opt);
+
+		console.groupEnd();
 	}
 
 	_initLogging() {
-		console.group(this.domElName + " - " + this.uid);		
+		this._logPrefix =  this.domElName + " #" + this.uid + ":";
+		this._logStyle = "font-size: 12px; color:darkred";
+		console.group(this._logPrefix);		
+	}
+
+	_log() {
+		var argumentsArr = Array.prototype.slice.call(arguments);
+		if(arguments[0]==="imp:"){
+			var msg = argumentsArr.slice(1,argumentsArr.length).join(" ");
+			console.log("imp:", "%c" + this._logPrefix, this._logStyle, msg);
+		}else{
+			console.log("%c" + this._logPrefix, this._logStyle, msg);
+		}
 	}
 
 	_isDebuggale() {
@@ -76,68 +95,63 @@ class DOMComponent extends HTMLElement {
 		return this.querySelector("component-data");
 	}
 
+	_getDomNode(){
+		return document.querySelector("[data-component='" + this.uid + "']");
+	}
+
 	_initComponentDataSrc(opt){
 		var _cmp_data = this._getCmpData();
 		if(_cmp_data){
 			var label = _cmp_data.getAttribute("label");
 			var socket = _cmp_data.getAttribute("socket");
+			this._log("imp:","initialising component data source");
 			if(label && socket){
 				this.__initDataSrcBroker(label);
 				this.data_src = new DataSource(label, socket, this);
-				 // Object.defineProperty(this, 'data', {
-				 //        get: ()=>{return this.data_src._get()},
-				 //        // set: (val) => {this.data_src._updateData(val)}
-				 //        set: (val) => {this.data = val}
-				 //    });	
+			 	Object.defineProperty(this, 'data', {
+			        get: ()=>{return this.postProcessCmpData.call(this, this.data_src.data);}
+			    });
 			}
 		}
 	}
 
-	_getDomNode(){
-		return document.querySelector("[data-component='" + this.uid + "']");
-	}
-
-	__initDataSrcBroker(label,cb,scope) {
+	__initDataSrcBroker(label) {
 		var _this = this;
-		this.broker = PostOffice.registerBroker(_this, label, (ev)=> {
-			console.log("imp:",_this.data_src.label,"- ","component data update signal received");
-			try{
-				// var _newData = _this.data_src._get();
-				// _newData.then((_val)=>{
-				// 	_this.processCmpData.call(_this,_val);
-				// 	_this.render();
-				// })
-				_this.processCmpData.call(_this, _this.data_src.data);
-				_this.render();
-			}catch(e){
-				console.log("imp:","(ERROR) - ", e);
-			}
-		})
+		this.broker = PostOffice.registerBroker(this, label, (ev)=>{
+			_this._onDataSrcUpdate.call(_this, ev)
+		});
 	}
 
-	_init_default_brokers(opt) {
+	_initDefaultBrokers(opt) {
 		// DOMComponent.defaultLifecycleBrokers.forEach((_le)=>{
 		// 	PostOffice.registerBroker(_le.label, update)
 		// 	document.addEventListener(_le.label, _le.callback);
 		// });
 	}
 
-	_init_lifecycle(opt) {
-		this._init_default_brokers(opt)
+	_initLifecycle(opt) {
+		this._initDefaultBrokers(opt);
+
+		this._initComponentDataSrc(opt);
+
+		this.render();
 	}
 
-	processCmpData(newData) {
-		console.log("imp:","THEN - ", this.data_src.label, " === ", newData);
-		try{
-			if(this.processData){   //processData can be defined when creating components (see inventory_block.js - MedicineThumbnailList)
-				var newData = this.processData.call(this, newData);
+	postProcessCmpData(newData) {
+		// console.group(this._logPrefix+"postProcessData");
+		this._log("imp:","Post-Processing cmp data (label = " + this.data_src.label + "), data = ");
+		console.dir(newData);
+		if(this.processData){   //processData can be defined when creating components (see inventory_block.js - MedicineThumbnailList)
+			try{
+				this._processedData = this.processData.call(this, newData);
+				return this._processedData;
+			}catch(e){
+				console.log("imp:","could not update CMP data");
+				return newData;
 			}
-			this.data = newData;
-			return true;
-		}catch(e){
-			console.log("imp:","could not update CMP data");
-			return false;
 		}
+		return newData;
+		// console.groupEnd();
 	}
 
 	__processRenderedFragEventListeners () {
@@ -161,19 +175,24 @@ class DOMComponent extends HTMLElement {
 	}
 
 	render() {
-		console.log("----------rendering component start---------------");
+		this._log("----------rendering component start---------------");
 		var _this = this;
-		TRASH_SCOPE.____data = this.data;
-		var _rendered = this.markupFunc.call(this, this.data, this.uid);
+
+		try{
+			var _rendered = this.markupFunc.call(this, this.data, this.uid);
+		}catch(e){
+			console.log("imp:", "following error in render markupFunc - ", e);
+			return;
+		}
 		// this.shadow.innerHTML = _rendered;
 
-		// console.log("imp:","rendered markupFunc");
+		// this._log("imp:","rendered markupFunc");
 		this._renderedFrag = stringToHTMLFrag(_rendered);
-		// console.log("imp:","rendered fragment");
+		// this._log("imp:","rendered fragment");
 		this._renderedFrag.firstElementChild.dataset.component = this.uid;
 
 		this.__processRenderedFragEventListeners();
-		// console.log("imp:","renderered fragment uid");
+		// this._log("imp:","renderered fragment uid");
 		var cmp_dom_node = this._getDomNode();
 		try{
 			if(cmp_dom_node){
@@ -183,20 +202,16 @@ class DOMComponent extends HTMLElement {
 				// this.outerHTML = _rendered; //case when custom element in the html is rendered for the 1st time
 				this.replaceWith(this._renderedFrag);
 			}
-			// console.log("imp:","cmpdomnode = ", cmp_dom_node);
+			// this._log("imp:","cmpdomnode = ", cmp_dom_node);
 			
 		}catch(e){
-			console.log("imp:","(ERROR) - component rendering failed with the following error - \n", e);
+			this._log("imp:","(ERROR) - component rendering failed with the following error - \n", e);
 		}
-		TRASH_SCOPE.debugRenderedCmp = this;
-		console.log("----------rendering component end-----------------");
-		
-		console.groupEnd();
-		return this
-	}
 
-	attributeChangedCallback () {
-		this.render();
+		TRASH_SCOPE.debugLastRenderedCmp = this;
+		this._log("----------rendering component end-----------------");
+		
+		return this
 	}
 	
 }

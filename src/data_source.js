@@ -20,33 +20,33 @@ class DataSource{
 	__init__() {
 		this._initLogging();
 
-		if(!this.socket){
-			this._log("initialisation skipped; _reason_: no socket attribute defined;");
-		}
-
 		this._checkLocalDBorFixtures();
 		this._initSocket();
  
-		this._log("initialisation successful;");
+		this._log("imp:","initialisation successful;");
+		// console.groupEnd();
 	}
 
-
 	_initLogging(){
-		this._logPrefix = "%c" + this._cmp.domElName + ".DataSource: ";
+		this._logPrefix = this._cmp._logPrefix + " DataSource: ";
 		this._logStyle = "font-size: 12px; color:blue";
+		// console.group(this._logPrefix);
 	}
 
 	_log() {
 		var argumentsArr = Array.prototype.slice.call(arguments);
 		if(arguments[0]==="imp:"){
 			var msg = argumentsArr.slice(1,argumentsArr.length).join(" ");
-			console.log("imp:", this._logPrefix, this._logStyle, msg);
+			console.log("imp:", "%c" + this._logPrefix, this._logStyle, msg);
 		}else{
-			console.log(this._logPrefix, this._logStyle, msg);
+			console.log("%c" + this._logPrefix, this._logStyle, msg);
 		}
 	}
 
 	_initSocket(){
+		if(!this.socket){
+			this._log("No socket initialised");
+		}
 		var _this = this;
 		if(this.socket){
 			this.socket.addEventListener("message", (ev) => {
@@ -64,6 +64,7 @@ class DataSource{
 			}
 			_this.data = value;
             _this._log('imp:', 'got locally stored data');
+            PostOffice.broadcastMsg(_this.label, _this.data);
         }).catch((err) => {
             _this._log('imp:', 'error checking locally stored data;', " _reason_: ", err, ";" );
             _this._loadFixtures(); 
@@ -119,7 +120,7 @@ class DataSource{
 	}
 
 	_onmsg (ev) {
-		console.group("datasource#"+this._cmp.uid + " ("+this._cmp.domElName+")");
+		console.group(this._logPrefix);
 		this._log("imp:", "got msg - ");
 		if(!ev.data){return;}
 		var _data = null;
