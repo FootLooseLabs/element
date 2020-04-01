@@ -3,7 +3,7 @@ import { PostOffice } from "./post_office.js";
 // import localforage from "/node_modules/localforage/src/localforage.js";
 import "localforage";
 
-class DataSource{
+class DataSource{   //returns null only if this.label is null
 
 	constructor(label, socket, _cmp) {
 		// Object.defineProperty(this, 'data', {
@@ -14,10 +14,15 @@ class DataSource{
 	    this.events = [];
 	    this.data = {};
 	    this._cmp = _cmp;
-	    this.__init__();
+	    this.__init__();_get
 	}
 
 	__init__() {
+		if(!this.label){
+			this._log("imp:","initialisation stopped - No label specified.");
+			return;
+		}
+
 		this._initLogging();
 
 		this._checkLocalDBorFixtures();
@@ -91,18 +96,18 @@ class DataSource{
 		
 	}
 
-	async _get () {
-		try {
-		    var _data = await localforage.getItem(this.label);
-		    // var _dataJSON = JSON.parse(_data);
-		    // console.log("imp:","GOT DATA in DataSource === ", _data);
-		    return _data;
-		} catch (err) {
-		    this._log("imp:","error in datasource._get --> ",err);
-		    return false;
-		}
-		// return JSON.parse(this.data).data;
-	}
+	// async _get () {
+	// 	try {
+	// 	    var _data = await localforage.getItem(this.label);
+	// 	    // var _dataJSON = JSON.parse(_data);
+	// 	    // console.log("imp:","GOT DATA in DataSource === ", _data);
+	// 	    return _data;
+	// 	} catch (err) {
+	// 	    this._log("imp:","error in datasource._get --> ",err);
+	// 	    return false;
+	// 	}
+	// 	// return JSON.parse(this.data).data;
+	// }
 
 	_updateData (data) {
 		console.log("attempting data update");

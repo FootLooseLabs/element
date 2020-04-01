@@ -107,13 +107,16 @@ class DOMComponent extends HTMLElement {
 			var label = _cmp_data.getAttribute("label");
 			var socket = _cmp_data.getAttribute("socket");
 			this._log("imp:","initialising component data source");
-			if(label && socket){
-				this.__initDataSrcBroker(label);
-				this.data_src = new DataSource(label, socket, this);
-			 	Object.defineProperty(this, 'data', {
-			        get: ()=>{return this.postProcessCmpData.call(this, this.data_src.data);}
-			    });
-			}
+			this.__initDataSrcBroker(label);
+			this.data_src = new DataSource(label, socket, this);
+		}
+		if(this.data_src){
+		 	Object.defineProperty(this, 'data', {
+		        get: ()=>{return this.postProcessCmpData.call(this, this.data_src.data);}
+		    });
+		}else{  //happens when _cmd_data is null or label is null
+			this._log("imp:","component data is null, directly rendering the component.");
+			this.render();
 		}
 	}
 
@@ -136,7 +139,6 @@ class DOMComponent extends HTMLElement {
 
 		this._initComponentDataSrc(opt);
 
-		this.render();
 	}
 
 	postProcessCmpData(newData) {
@@ -184,7 +186,7 @@ class DOMComponent extends HTMLElement {
 		});
 	}
 
-	render() {
+	render() { //called from either - 1.) datasrcupdate, 2.) datasrc is null after init, 3.) onattributechange
 		this._log("----------rendering component start---------------");
 		var _this = this;
 
