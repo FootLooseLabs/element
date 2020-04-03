@@ -176,7 +176,9 @@ Router.prototype.getToggleClass = function(route_name){
 }
 
 Router.prototype.getSubRouteAncesstors = function(route_name){
-	var ancesstor_elems = [].slice.call($("[route]").has(" [route='"+route_name+"'][sub-route]"));
+	var nodeList = document.querySelectorAll("[route]")
+	var ancesstor_elems = Array.from(nodeList).filter(el => el.querySelector("[route='"+route_name+"'][sub-route]"))
+	// var ancesstor_elems = [].slice.call($("[route]").has(" [route='"+route_name+"'][sub-route]"));
 	var ancesstor_routes = ancesstor_elems.map(function(a){return a.getAttribute("route")})
 	return {elems: ancesstor_elems, routes: ancesstor_routes};
 }
