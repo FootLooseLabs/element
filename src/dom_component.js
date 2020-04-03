@@ -6,16 +6,20 @@ import { stringToHTMLFrag } from "./utils.js";
 
 class DOMComponent extends HTMLElement {
 
-	static defaultLifecycleBrokers (){
-		return [
-					{
-						label: "dataChange", 
-						cb: "render"
-					}
-				]
-	}
-
 	static get observedAttributes() { return ['data-update']; }
+
+	defaultLifecycleBrokers (state){
+		var defaultBrokers = [
+					{state: "datasrcInit", label :"init-data-src-" + this.uid}
+			   ]
+
+		if(state){
+			return defaultBrokers.filter((_broker)=>{
+				return _broker.state == state;
+			});
+		}
+		return defaultBrokers;
+	}
 
 	constructor(opt){
 		super();
@@ -26,6 +30,7 @@ class DOMComponent extends HTMLElement {
 		this.data = this.constructor.schema || {};
 		this.domElName = this.constructor.domElName || opt.domElName;
 		this.uid = randomString(8);
+		this.uiVars = {};
 		this.data_src = null;
 		this.opt = opt;
 	}
@@ -108,7 +113,8 @@ class DOMComponent extends HTMLElement {
 			var socket = _cmp_data.getAttribute("socket");
 			this._log("imp:","initialising component data source");
 			this.__initDataSrcBroker(label);
-			this.data_src = new DataSource(label, socket, this);
+			// this.data_src = new DataSource(label, socket, this, proxy);
+			this.data_src = DataSource.getOrCreate(label, socket, this);
 		}
 		if(this.data_src){
 		 	Object.defineProperty(this, 'data', {
@@ -128,9 +134,11 @@ class DOMComponent extends HTMLElement {
 	}
 
 	_initDefaultBrokers(opt) {
-		// DOMComponent.defaultLifecycleBrokers.forEach((_le)=>{
-		// 	PostOffice.registerBroker(_le.label, update)
-		// 	document.addEventListener(_le.label, _le.callback);
+		// var _this = this;
+		// this.defaultLifecycleBrokers().map((_entry)=>{
+		// 	PostOffice.registerBroker(_this, _entry.label, (ev)=>{
+		// 		_this._initComponentDataSrc.call(_this);
+		// 	});
 		// });
 	}
 
@@ -191,7 +199,7 @@ class DOMComponent extends HTMLElement {
 		var _this = this;
 
 		try{
-			var _rendered = this.markupFunc.call(this, this.data, this.uid);
+			var _rendered = this.markupFunc.call(this.prototype, this.data, this.uid, this.uiVars); //this.prototype returns the class instance invoking this method 
 		}catch(e){
 			console.log("imp:", "following error in render markupFunc - ", e);
 			return;

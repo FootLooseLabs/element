@@ -5,21 +5,42 @@ import "localforage";
 
 class DataSource{   //returns null only if this.label is null
 
-	constructor(label, socket, _cmp) {
+	static getOrCreate(label, socket, _cmp) {
+		// if(proxyLabel){
+		// 	return DataSource.getProxy(proxyLabel, replyLabel);
+		// }
+		// return new DataSource(label, socket, _cmp);
+		if(!label){
+			console.log("imp:","datasource initialisation stopped - No label specified.");
+			return;
+		}
+		var _dataSrc = DataSource._getInstance(label, socket);
+		if(_dataSrc){
+			return _dataSrc;
+		}
+		return new DataSource(label, socket, _cmp);
+	}
+
+	constructor(label, socket, _cmp, proxy) {
 		// Object.defineProperty(this, 'data', {
 		//    get: this._get
 		// });
 	    this.socket = socket ? PostOffice.sockets[socket] : null;
-	    this.label = label;
+	    this.label = label; //label has to be unique
 	    this.events = [];
 	    this.data = {};
 	    this._cmp = _cmp;
-	    this.__init__();_get
+	    this.comms = {
+	    	"init" : `${this.label}-datasrc-initialised`
+	    }
+	    this.active = true;
+	    return this.__init__();
 	}
 
 	__init__() {
 		if(!this.label){
 			this._log("imp:","initialisation stopped - No label specified.");
+			this.active = false;
 			return;
 		}
 
@@ -27,7 +48,9 @@ class DataSource{   //returns null only if this.label is null
 
 		this._checkLocalDBorFixtures();
 		this._initSocket();
- 
+
+		DataSource._instances.update(this);
+ 		
 		this._log("imp:","initialisation successful;");
 		// console.groupEnd();
 	}
@@ -144,6 +167,40 @@ class DataSource{   //returns null only if this.label is null
 		console.groupEnd()
 	}
 }
+
+DataSource._instances = [];
+
+DataSource._instances.update = function(_entry){
+	DataSource._instances.push(_entry);
+	// PostOffice.broadcastMsg(_entry.comms.init, _entry);
+}
+
+DataSource._getInstance = function(label, socket){
+	return DataSource._instances.find((_ds)=>{
+		return _ds.label == label && _ds.socket == socket;
+	});
+}
+
+// DataSource.getProxy = function(proxyLabel, replyLabel){
+// 	console.log("imp:","searching for proxy data source");
+// 	window.ttutis = this;
+// 	var proxy = DataSource._getInstance(proxyLabel);  //could have used label attribute (if found with given label - use the same --> BUT this would have disabled those scenarios where 2 or more different data-sources might be changing the same data)
+// 	if(!proxy){
+// 		console.log("imp:","could not find any proxy data source with label = " + proxyLabel);
+
+// 		var msgLabel = `${proxyLabel}-datasrc-initialised`;
+// 		PostOffice.registerBroker(this, msgLabel, (ev)=>{
+// 			console.log("imp:", "in on the");
+// 			PostOffice.broadcastMsg(replyLabel);
+// 		});
+
+// 		this.active = false;
+// 		return;
+// 	}
+// 	var datasrc = new Proxy(proxy, {}); //using proxy to enable proxy datasources to extend/abstract certain functions/data from the datasources they are proxying from without affecting them.
+// 	console.log("imp:","created proxy data source " + this.proxy);
+// 	return datasrc;
+// }
 
 export {
 	DataSource

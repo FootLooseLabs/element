@@ -4,6 +4,8 @@ window.TRASH_SCOPE = {};
 (() => {
 	var __log = console.log;
 	console.log = function() {
+		if(window.LOGGING_LEVEL == "NONE"){return;}
+
 		if(arguments[0]==="imp:"){
 			var argumentsArr = Array.prototype.slice.call(arguments);
 			var msgArr = argumentsArr.slice(1,argumentsArr.length)
