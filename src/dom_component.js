@@ -28,6 +28,7 @@ class DOMComponent extends HTMLElement {
 		}
 		var opt = opt || {};
 		this.data = this.constructor.schema || {};
+		this.schema = this.constructor.schema || {};
 		this.domElName = this.constructor.domElName || opt.domElName;
 		this.uid = randomString(8);
 		this.uiVars = {};

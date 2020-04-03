@@ -16,6 +16,7 @@ class DataSource{   //returns null only if this.label is null
 		}
 		var _dataSrc = DataSource._getInstance(label, socket);
 		if(_dataSrc){
+			console.log("imp:","pre-existing datasource available - using the same.");
 			return _dataSrc;
 		}
 		return new DataSource(label, socket, _cmp);
@@ -25,6 +26,7 @@ class DataSource{   //returns null only if this.label is null
 		// Object.defineProperty(this, 'data', {
 		//    get: this._get
 		// });
+		this.socketName = socket;
 	    this.socket = socket ? PostOffice.sockets[socket] : null;
 	    this.label = label; //label has to be unique
 	    this.events = [];
@@ -177,7 +179,7 @@ DataSource._instances.update = function(_entry){
 
 DataSource._getInstance = function(label, socket){
 	return DataSource._instances.find((_ds)=>{
-		return _ds.label == label && _ds.socket == socket;
+		return _ds.label == label && _ds.socketName == socket;
 	});
 }
 

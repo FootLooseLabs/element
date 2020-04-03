@@ -16,9 +16,15 @@ window.TRASH_SCOPE = {};
 	}
 })();
 
+
 import { DOMComponentRegistry, DataSource, PostOffice, DOMComponent } from "./dom_component.js";
 import { Router } from "./router.js";
 import "./include.js";
+
+// Object.prototype.register = function(){ 
+// 	if(!(this.prototype instanceof DOMComponent)){return;}
+// 	DOMComponentRegistry.register(this);
+// }
 
 DOMComponentRegistry.start();
 window.Router = Router;
