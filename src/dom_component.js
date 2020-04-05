@@ -40,6 +40,11 @@ class DOMComponent extends HTMLElement {
 	connectedCallback() {
 		var opt = this.opt;
 		this.__init__(opt);
+
+		PostOffice.registerBroker(this, `${this.uid}_markupRendered`, (_renderedMarkup)=>{
+			this.render(_renderedMarkup);
+		});
+
 		if(this.onConnect) {
 			this.onConnect.call(this);
 		}
@@ -159,7 +164,7 @@ class DOMComponent extends HTMLElement {
 				this._processedData = this.processData.call(this, newData);
 				return this._processedData;
 			}catch(e){
-				console.log("imp:","could not update CMP data");
+				this._log("imp:","could not post process CMP data - ", e);
 				return newData;
 			}
 		}
@@ -195,15 +200,27 @@ class DOMComponent extends HTMLElement {
 		});
 	}
 
-	render() { //called from either - 1.) datasrcupdate, 2.) datasrc is null after init, 3.) onattributechange
+	render(_rendered) { //called from either - 1.) datasrcupdate, 2.) datasrc is null after init, 3.) onattributechange
 		this._log("----------rendering component start---------------");
 		var _this = this;
 
-		try{
-			var _rendered = this.markupFunc.call(this.prototype, this.data, this.uid, this.uiVars); //this.prototype returns the class instance invoking this method 
-		}catch(e){
-			console.log("imp:", "following error in render markupFunc - ", e);
-			return;
+		if (!_rendered){
+			if(PostOffice.worker){
+				// PostOffice.broadcastMsg("worker-task", 
+				// 	{ label: `${this.uid}_markupRendered`, 
+				// 	  cmd: "renderMarkup",
+				// 	  msg: {markupFunc: this.markupFunc, data: this.data, uid: this.uid, uiVars: this.uiVars}
+				// 	});
+				PostOffice.runViaWorker({targetFunc: this.markupFunc, label: this.label, args:[this.data, this.uid, this.uiVars]});
+				return;
+			}else{
+				try{
+					var _rendered = this.markupFunc.call(this.prototype, this.data, this.uid, this.uiVars); //this.prototype returns the class instance invoking this method 
+				}catch(e){
+					console.log("imp:", "following error in render markupFunc - ", e);
+					return;
+				}
+			}
 		}
 		// this.shadow.innerHTML = _rendered;
 

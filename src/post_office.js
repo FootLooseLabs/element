@@ -1,3 +1,5 @@
+import { randomString } from "./utils.js";
+
 class PostOffice extends Object {
 
 	// constructor() {
@@ -72,10 +74,75 @@ class PostOffice extends Object {
 		  _scope.dispatchEvent(evnt);
 		  PostOffice._runBroker(label,msg, _scope);
 		}
+
+	static runViaWorker({targetFunc, label, args} = {}) {
+		var trigger = `self.onmessage = function(msgEv){
+			if(msgEv.data == "start"){
+				var result = ${targetFunc()}
+				postMessage(result);
+			}
+		}` 
+		var blob = new Blob([targetFunc],{type: 'text/javascript'});
+		PostOffice.workers.label = new Worker(window.URL.createObjectURL(blob));
+	}
+
+	static _startWorker() {
+		console.log("imp:", "starting PostOffice worker...");
+	  	if (typeof(Worker) !== "undefined") {
+		    if(!(PostOffice.worker)) {
+	    		PostOffice._worker = new Worker(MuffinConfig.POST_OFFICE_WORKER_URL)
+	    		PostOffice._worker.onerror = () => {
+	    				console.log("imp:", "webworker couldn't be initialised. check MuffinConfig.POST_OFFICE_WORKER_URL");
+	    				PostOffice._worker = null;
+	    				return;
+	    			}
+		    }
+		} else {
+		    console.log("imp:", "webworker support not available. running PostOffice without worker.");
+		}
+
+		if(PostOffice._worker) {
+			PostOffice._worker.onmessage = function(msgEv) {
+				if(msgEv.data == "pong"){
+    				PostOffice.worker = PostOffice._worker;
+    				console.log("imp:", "PostOffice worker started.");
+    				return;
+    			}
+    			console.log("imp:","From PostOffice Worker - ");
+		    	console.dir(msgEv);
+		    	if(msgEv.data.error){
+		    		console.log("imp:", "From PostOffice Worker - ", msgEv.data.error);
+		    		return;
+		    PostOffice.worker.postMessage(data);	}
+		    	PostOffice.broadcastMsg(msgEv.data.label, msgEv.data.msg);
+		    };
+
+		    PostOffice._worker.postMessage("ping");
+		}
+	}
+
+	static _registerWorkerBroker() {
+		PostOffice.registerBroker(this,"worker-task", (data)=>{
+			// PostOffice.worker.postMessage(data);
+			// PostOffice.runViaWorker();
+		})
+	}
+
+	static start() {
+		if(PostOffice.started){
+			console.log("PostOffice already started");
+			return;
+		}
+		PostOffice._registerWorkerBroker();
+		// PostOffice._startWorker();
+		// PostOffice.started = true;
+	}
 }
 
 PostOffice.sockets = {};
 PostOffice.registry = [];
+PostOffice.worker = null;
+PostOffice.workers = {};
 PostOffice.Broker = class PostOfficeBroker {
 							constructor(_label, _cb, _scope) {
 								this.label = _label;

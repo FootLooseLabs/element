@@ -1,17 +1,20 @@
-window.LOGGING_LEVEL = "NODEBUG";
 window.TRASH_SCOPE = {};
+window.MuffinConfig = {
+	"LOGGING_LEVEL" : "IMP",
+	"POST_OFFICE_WORKER_URL": "muffin_po_worker.js"
+};
 
 (() => {
 	var __log = console.log;
 	console.log = function() {
-		if(window.LOGGING_LEVEL == "NONE"){return;}
+		if(MuffinConfig.LOGGING_LEVEL == "NONE"){return;}
 
 		if(arguments[0]==="imp:"){
 			var argumentsArr = Array.prototype.slice.call(arguments);
 			var msgArr = argumentsArr.slice(1,argumentsArr.length)
 			__log.apply(this, msgArr);
 		}
-		if(window.LOGGING_LEVEL !== "DEBUG"){return;}
+		if(MuffinConfig.LOGGING_LEVEL !== "DEBUG"){return;}
     	__log.apply(this, arguments);
 	}
 })();
@@ -27,6 +30,8 @@ import "./include.js";
 // }
 
 DOMComponentRegistry.start();
+PostOffice.start();
+
 window.Router = Router;
 window.PostOffice = PostOffice;
 window.DOMComponentRegistry = DOMComponentRegistry;
