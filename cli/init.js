@@ -70,19 +70,29 @@ return `{
     "author": "${opt.author || 'footloose.io'}",
     "license": "${opt.license || 'ISC'}",
     "devDependencies": {
+        "@babel/cli": "^7.1.2",
+        "@babel/core": "^7.1.2",
+        "babel-cli": "^6.26.0",
+        "babel-plugin-transform-class-properties": "^6.24.1",
         "gulp": "^4.0.2",
         "gulp-concat": "^2.6.1",
         "gulp-concat-css": "^3.1.0",
+        "gulp-inline-source": "^4.0.0",
         "gulp-rename": "^1.4.0",
+        "gulp-run-command": "0.0.10",
         "gulp-uglify": "^3.0.2",
-        "gulp-uglify-es": "^2.0.0",
         "gulp-uglifycss": "^1.1.0",
+        "rollup": "^0.66.6",
+        "rollup-plugin-babel": "^4.4.0",
+        "rollup-plugin-commonjs": "^9.2.0",
+        "rollup-plugin-node-resolve": "^3.4.0",
+        "rollup-plugin-replace": "^2.1.0",
+        "rollup-plugin-uglify": "^6.0.0",
         "uglify-es": "^3.3.9",
         "gulp-htmlmin": "^5.0.1"
     },
     "dependencies": {
-        "muffin": "file:/home/a-ankur/footloose_labs/productivity/muffin",
-        "localforage": "^1.7.3"
+        "muffin": "github:FootLooseLabs/muffin"
     }
 }`
 }
@@ -163,9 +173,11 @@ return `venv
 node_modules
 .DS_Store
 *.min.js
+*.min.css
 index.html
-components/dist/_cmps.js
-assets/dist`
+components/dist/
+assets/js/dist
+assets/css/dist`
 }
 
 var createProjectFiles = (opt) => {
