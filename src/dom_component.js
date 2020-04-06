@@ -159,7 +159,7 @@ class DOMComponent extends HTMLElement {
 				this._processedData = this.processData.call(this, newData);
 				return this._processedData;
 			}catch(e){
-				console.log("imp:","could not update CMP data");
+				this._log("imp:","could not post process CMP data - ", e);
 				return newData;
 			}
 		}
