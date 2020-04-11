@@ -85,6 +85,10 @@ class DataSource{   //returns null only if this.label is null
 		}
 	}
 
+	_normalizeData(data) {
+		return {...this._cmp.schema, ...data};
+	}
+
 	_checkLocalDBorFixtures(){
 		var _this = this;
 		localforage.getItem(this.label).then((value) => {
@@ -134,12 +138,13 @@ class DataSource{   //returns null only if this.label is null
 	// 	// return JSON.parse(this.data).data;
 	// }
 
-	_updateData (data) {
+	_updateData (_data) {
 		console.log("attempting data update");
 		var _this = this;
 		if(this._cmp._isDebuggale()){
 			TRASH_SCOPE.cmp_data_src = this;
 		}
+		var data = this._normalizeData(_data)
 		localforage.setItem(this.label, data).then(function (value) {
 			_this.data = value;
             _this._log('imp:', 'updated data');

@@ -2,6 +2,9 @@ import babel from 'rollup-plugin-babel';
 import resolve from 'rollup-plugin-node-resolve';
 import replace from 'rollup-plugin-replace';
 import {uglify}  from "rollup-plugin-uglify";
+const path = require('path');
+const license = require('rollup-plugin-license');
+
 
 export default {
   entry: 'src/muffin.js',
@@ -19,6 +22,14 @@ export default {
     }),
     replace({
       ENV: JSON.stringify(process.env.NODE_ENV || 'development'),
+    }),
+    license({
+      banner: {
+        commentStyle: 'regular', // The default
+        content: {
+          file: path.join(__dirname, 'banner.txt'),
+        },
+      },
     }),
     (process.env.NODE_ENV === 'production' && uglify()),
   ],

@@ -1,0 +1,10 @@
+Bundle of <%= pkg.name %>
+Generated: <%= moment().format('YYYY-MM-DD') %>
+Version: <%= pkg.version %>
+FootLoose Labs (<%= pkg.author %>)
+
+
+Dependencies:
+<% _.forEach(dependencies, function (dependency, idx) { %>
+  	<%= dependency.name %> -- <%= dependency.version %>
+<% }) %>
