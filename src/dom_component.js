@@ -143,7 +143,18 @@ class DOMComponent extends HTMLElement {
 		// });
 	}
 
+	_initUiVars(opt) {
+		// Object.defineProperty(this, 'uiVars', {
+	 //        set: (value)=>{
+	 //        	this['uiVars']=value;
+	 //        	this.render();
+	 //        }
+	 //    });
+	} 
+
 	_initLifecycle(opt) {
+		this._initUiVars(opt);
+
 		this._initDefaultBrokers(opt);
 
 		this._initComponentDataSrc(opt);

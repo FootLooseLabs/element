@@ -14,32 +14,63 @@ function Router(options){
 Router.prototype.__init__ = function(){
 	var _this = this;
 
-	window.onpopstate = function(e){
-		console.log(e);
-		var _route_name = window.location.search.split("?").pop().split("/").slice(-1)[0] || _this.getDefaultRoute().name;
-		var route_obj = _this.getRoute(_route_name);
-		_this.triggerCustomEvent(window,'stateChange',{state: route_obj});
-	}
+	this._initLogging();
 
+	this._initListeners();
+
+	this._log('router initialized');
+}
+
+Router.prototype._initLogging = function(){
+	this._logPrefix = "Router: ";
+	this._logStyle = "font-size: 12px; color:green";
+}
+
+Router.prototype._log = function() {
+	var argumentsArr = Array.prototype.slice.call(arguments);
+	if(arguments[0]==="imp:"){
+		var msg = argumentsArr.slice(1,argumentsArr.length).join(" ");
+		console.log("imp:", "%c" + this._logPrefix, this._logStyle, msg);
+	}else{
+		console.log("%c" + this._logPrefix, this._logStyle, msg);
+	}
+}
+
+Router.prototype.getRoutePathFromWindowLocation = function() {
+	var routePath = window.location.search.split("?").pop() || this.getDefaultRoute().name;
+	return routePath;
+}
+
+Router.prototype.getRoutePathFromHistoryState = function() {
+	return window.history.state.name;
+}
+
+Router.prototype.getCurrentRoute = function(){
+	if(window.history.state){
+		return this.getRoutePathFromHistoryState();
+	}else{
+		return this.getRoutePathFromWindowLocation();
+	}
+}
+
+Router.prototype._initListeners = function(){
+	var _this = this;
+	window.onpopstate = function(){ //not called wgeb durectly called by script (only called on browser actions by user)
+		_this._log("imp:", "onpopstate start");
+		var routeName = _this.getCurrentRoute();
+		var routeObj = _this.getRoute(routeName);
+		_this._log("imp:", "onpopstate end");
+		_this.triggerCustomEvent(window,'stateChange',{state: routeObj});
+	}
 
 	window.addEventListener('stateChange', function(ev){
 		_this.onStateChange.call(_this, ev);
 	});
 
 	document.addEventListener('DOMContentLoaded', (e) => {
-		var _route = window.location.search.split("?").pop().split("/").slice(-1)[0] || _this.getDefaultRoute().name;
-		console.log("imp:","going to defaultRoute = ", _route);
-		setTimeout(()=>{_this.go(_route)},1000);
+		var routeName = _this.getCurrentRoute();
+		setTimeout(()=>{_this.go(routeName)},1000);
 	},false);
-
-	console.log('router initialized');
-}
-
-Router.prototype.onInit = function(){
-	var _this = this;
-	// [].slice.call(_this.containment.querySelectorAll('[route]')).forEach(function(el){
- //      _this.routes.push({el.dataset.route, el.onload})
- //    })
 }
 
 
@@ -55,58 +86,93 @@ Router.prototype.getRoute = function(route_name){
 	})[0]
 }
 
-Router.prototype.closeRoute = function(route, route_el){
+Router.prototype.closeRoute = function(routeObj, routeEl){
 	var _this = this;
-	if(!route){return;}
-	route.onbeforeexit ? route.onbeforeexit.call(_this, route_el) : null;
-	route_el.classList.remove(_this.toggleClass);
-	route.active = false;	
+	if(!routeObj){return;}
+	routeObj.onbeforeexit ? routeObj.onbeforeexit.call(_this, routeEl) : null;
+	routeEl.classList.remove(_this.toggleClass);
+	routeObj.active = false;	
 }
 
-Router.prototype.togglePage = function(target_page, target_route){
-	var _this = this;
-	var scope = this.containment;
-
-	if(_this.isSubRoute(target_route.name)){
-		var ancesstor_elems = this.getSubRouteAncesstors(target_route.name).elems;
-		scope = ancesstor_elems.slice(-1)[0]; //direct parent
-	}
-
-	var currently_active_pages_in_scope = scope.querySelectorAll('._active[route]');
-
-	currently_active_pages_in_scope.forEach(function(currently_active_page, currently_active_route){
-		var currently_active_route = _this.getRoute(currently_active_page.getAttribute('route'));
-		_this.closeRoute(currently_active_route, currently_active_page);
-	});
-
-	target_page.classList.add(_this.getToggleClass());
-}
+// Router.prototype.togglePage = function(target_page, target_route){
+// 	var _this = this;
+	
+// }
 
 Router.prototype.onStateChange = function(ev){
-	var _this = this;
+	// var _this = this;
 	// var e = e.detail ? e.detail.srcEvent : e;
 	// eee = ev;
-	var state = ev.detail.state || {name: _this.getDefaultRoute().name};
-	console.log('state changing to - ', state.name);
+	var state = ev.detail.state || this.getDefaultRoute();
  
-	var target_route = _this.getRoute(state.name);
-	if(!target_route){
-		console.log('no such route');
+	var routeObj = this.getRoute(state.name);
+	if(!routeObj){
+		this._log('no such route');
 		return;
 	}
-
-	console.log("target_route = ", target_route);
 	
-	var target_page = this.containment.querySelector('[route='+state.name+']');
-	if(!target_page){return;}
+	this.toggleRouteEl(routeObj);
+}
 
-	this.togglePage(target_page, target_route);
 
-	target_route.active = true;
-	this._onload(target_route, target_page);
+Router.prototype.getRouteEl = function(routeName){
+	return this.containment.querySelector('[route='+routeName+']');
+}
 
-	this.active_route = target_route.name;
-	console.log('state changed to - ', this.active_route);
+
+Router.prototype.getCurrentScope = function(routeObj) {
+	var scope = this.containment;
+
+	if(this.isSubRoute(routeObj)){
+		var ancesstorRouteElems = this.getRouteAncesstors(routeObj.name).elems;
+		scope = ancesstorRouteElems.slice(-1)[0]; //direct parent
+	}
+
+	routeObj.scope = scope;
+	return scope;
+}
+
+Router.prototype._getActiveRouteElemsInScope = function(scope) {
+	var scope = scope || this.containment;
+	return scope.querySelectorAll(`.${this.getToggleClass()}[route]`);
+}
+
+Router.prototype._closeAllActiveRoutesInScope = function(scope) {
+	var _this = this;
+
+	var currently_active_route_elems_in_scope = this._getActiveRouteElemsInScope(scope);
+
+	currently_active_route_elems_in_scope.forEach(function(currently_active_route_el, currently_active_route){
+		var currently_active_route_obj = _this.getRoute(currently_active_route_el.getAttribute('route'));
+		_this.closeRoute(currently_active_route_obj, currently_active_route_el);
+	});
+}
+
+Router.prototype.toggleRouteEl = function(routeObj){
+	var routeEl = this.getRouteEl(routeObj.name);
+	if(!routeEl){_this._log('imp:','no elements with this route attr found');return;}
+
+	var _this = this;
+
+	var scope = this.getCurrentScope(routeObj);	
+
+	this._closeAllActiveRoutesInScope(scope);
+
+
+	//activate all the ancesstor routes to this route --> 
+	var ancesstorRouteElems = this.getRouteAncesstors(routeObj.name).elems;
+	ancesstorRouteElems.forEach((_routeEl)=>{
+		var _parentScope = _this.getCurrentScope(_this.getOrCreateRoute(_routeEl.getAttribute("route")));
+		_this._closeAllActiveRoutesInScope(_parentScope);
+		_routeEl.classList.add(this.getToggleClass());
+	});
+
+	routeEl.classList.add(this.getToggleClass());
+	routeObj.active = true;
+	this._onload(routeObj, routeEl);
+
+	this.active_route = routeObj.name;
+	this._log('imp:','toggled element with route attr = ', this.active_route);
 }
 
 
@@ -127,34 +193,33 @@ Router.prototype.triggerCustomEvent = function(target, eventName, details){
 }
 
 
-Router.prototype.updateUrl = function(route){
+Router.prototype.updateState = function(routeObj){
 	var _this = this;
 
-	var route_name = route.name;
-
-	if(this.isSubRoute(route_name)){
-		var ancesstor_routes = this.getSubRouteAncesstors(route_name).routes;
-		route_name = "/" + ancesstor_routes.join("/") + "/" + route_name;
-		console.log("route.name == ", route_name);
+	if(this.isSubRoute(routeObj)){
+		var ancesstorRouteNames = this.getRouteAncesstors(routeObj.name).routes;
+		routeObj.url = ancesstorRouteNames.join("/") + "/" + routeObj.name;
+		_this._log("route.name == ", routeObj.name);
 	}
 
-	// if(_this.isSubRoute(route_name)){ //doesn't work in case of mutliple sub-routes at the same level
-	// 	route_name = window.location.search.substr(1) + "/" + route.name;
-	// }
-
-	// if(route_name == "busy-loader"){
-	// 	route_name+= &
-	// }
-	// route_name = route.name =="busy-loader" ? route_name + '&' + route.name : route_name;
-
-	if(route.params){
-		for(var key in route.params){
-			route_name += ( "/" + String(key) + "=" + String(route.params[key]) );
+	if(routeObj.params){
+		for(var key in routeObj.params){
+			routeObj.url += ( "?" + String(key) + "=" + String(route.params[key]) );
 		}
 	}
 
-	window.history.pushState({ name: route.name }, route.name, "?" + route_name);
-	// window.history.pushState({ name: route_name }, route_name, "/" + route_name);
+
+	var historyTitle = routeObj.name;
+	var historyUrl = "?" + routeObj.name;
+	var historyData = { name: historyTitle, url: historyUrl };
+
+	try{
+		window.history.pushState(historyData, historyTitle, historyUrl);
+	}catch(e){
+		_this._log("imp:", "ERROR updating History");
+		return;
+	}
+	_this._log("imp:", "history updated");
 }
 
 Router.prototype.back = function(){
@@ -162,50 +227,47 @@ Router.prototype.back = function(){
 }
 
 
-Router.prototype.isSubRoute = function(route_name){
-	var _route_el = this.containment.querySelector('[route='+route_name+']');
-	if(!_route_el){return false;}
-	return _route_el.hasAttribute('sub-route') ? true : false;
+Router.prototype.isSubRoute = function(routeObj){
+	var routeEl = this.getRouteEl(routeObj.name);
+	if(!routeEl){return false;}
+	return true;
+	return routeEl.hasAttribute('sub-route') ? true : false;
 }
 
 Router.prototype.getToggleClass = function(route_name){
 	var _this = this;
-	var _route_el = this.containment.querySelector('[route='+route_name+']');
-	if(!_route_el){return _this.toggleClass}
-	return _route_el.hasAttribute('route-class') ? _route_el.getAttribute('route-class') : _this.toggleClass;
+	var routeEl = this.getRouteEl(route_name);
+	if(!routeEl){return _this.toggleClass}
+	return routeEl.hasAttribute('route-class') ? routeEl.getAttribute('route-class') : _this.toggleClass;
 }
 
-Router.prototype.getSubRouteAncesstors = function(route_name){
+Router.prototype.getRouteAncesstors = function(route_name){
 	var nodeList = document.querySelectorAll("[route]")
-	var ancesstor_elems = Array.from(nodeList).filter(el => el.querySelector("[route='"+route_name+"'][sub-route]"))
-	// var ancesstor_elems = [].slice.call($("[route]").has(" [route='"+route_name+"'][sub-route]"));
-	var ancesstor_routes = ancesstor_elems.map(function(a){return a.getAttribute("route")})
-	return {elems: ancesstor_elems, routes: ancesstor_routes};
+	var ancesstorRouteElems = Array.from(nodeList).filter(el => el.querySelector("[route='"+route_name+"']"))
+	// var ancesstorRouteElems = [].slice.call($("[route]").has(" [route='"+route_name+"'][sub-route]"));
+	var ancesstorRoutes = ancesstorRouteElems.map(function(a){return a.getAttribute("route")})
+	return {elems: ancesstorRouteElems, routes: ancesstorRoutes};
 }
 
 Router.prototype.go = function(route_name, url_params){
-	var route = this.getRoute(route_name);
-	var _route_el = this.containment.querySelector('[route='+route_name+']');
+	var routeEl = this.getRouteEl(route_name);
+	if(!routeEl){return;}
+	var routeObj = this.getOrCreateRoute(route_name, url_params);
+	this.updateState(routeObj);
+	this._log("imp:","changing route to - ", routeObj.name);
+	this.triggerCustomEvent(window,'stateChange',{ state: routeObj } );
+}
 
-	if(!route){
-
-		if(!_route_el){return;}
-
-		var route = {name: route_name};
-		
-		this.addRoute(route);
+Router.prototype.getOrCreateRoute = function(route_name, url_params){
+	var routeObj = this.getRoute(route_name);
+	if(!routeObj){
+		routeObj = {
+			name: route_name,
+			params: url_params
+		}
+		this.addRoute(routeObj);
 	}
-
-	var route_obj = {
-		name: route.name, 
-		params: url_params
-	}
-
-	this.updateUrl(route_obj);
-
-	console.log("imp:","changing route to - ", route_obj.name);
-
-	this.triggerCustomEvent(window,'stateChange',{ state: route_obj } );
+	return routeObj;
 }
 
 Router.prototype.addRoute = function(routeObj){
