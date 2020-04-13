@@ -1,6 +1,6 @@
 {
   "name": "muffin",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "lightweight & implementation-flexible spa frontend development framework",
   "main": "index.js",
   "bin": {
