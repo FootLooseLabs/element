@@ -79,8 +79,8 @@ class DataSource{   //returns null only if this.label is null
 		}
 		var _this = this;
 		if(this.socket){
-			this.socket.addEventListener("message", (ev) => {
-				_this._onmsg.call(_this, ev);
+			this.socket.addEventListener("message", (msg) => {
+				_this._onmsg.call(_this, msg);
 			});
 		}
 	}
@@ -154,13 +154,21 @@ class DataSource{   //returns null only if this.label is null
         });
 	}
 
-	_onmsg (ev) {
+	_authenticateMsg (_msg) {
+		// var auth = false;
+		// if(_msg.label === this.label){ auth = true;}
+		return _msg.label === this.label;
+	}
+
+	_onmsg (_msg) {
+		if(!_authenticateMsg){return;}
+
 		console.group(this._logPrefix);
 		this._log("imp:", "got msg - ");
-		if(!ev.data){return;}
+		if(!_msg.data){return;}
 		var _data = null;
 		try{
-			_data = JSON.parse(ev.data).data;
+			_data = JSON.parse(_msg.data).data;
 			// JSON.stringify(_data);  // no performance benefit to converting to strings & storing (instead additional steps)
 		}
 		catch(err){
