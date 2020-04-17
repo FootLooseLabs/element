@@ -161,7 +161,7 @@ class DataSource{   //returns null only if this.label is null
 	}
 
 	_onmsg (_msg) {
-		if(!_authenticateMsg){return;}
+		if(!this._authenticateMsg){return;}
 
 		console.group(this._logPrefix);
 		this._log("imp:", "got msg - ");
