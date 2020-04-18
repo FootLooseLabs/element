@@ -211,7 +211,7 @@ class DOMComponent extends HTMLElement {
 		var _this = this;
 
 		try{
-			var _rendered = this.markupFunc.call(this.prototype, this.data, this.uid, this.uiVars); //this.prototype returns the class instance invoking this method 
+			var _rendered = this.markupFunc(this.data, this.uid, this.uiVars); //this.prototype returns the class instance invoking this method 
 		}catch(e){
 			console.log("imp:", "following error in render markupFunc - ", e);
 			return;
