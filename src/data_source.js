@@ -93,9 +93,12 @@ class DataSource{   //returns null only if this.label is null
 		var _this = this;
 		localforage.getItem(this.label).then((value) => {
 			if(!value){
-				_this._loadFixtures();
-				return;
-			}
+  				var fixtures = _this._loadFixtures();
+		        if(!fixtures){
+	            _this._log('imp:','no fixtures applied');
+	        	}
+	  			return;
+	  		}
 			_this.data = value;
             _this._log('imp:', 'got locally stored data');
             PostOffice.broadcastMsg(_this.label, _this.data);
@@ -107,20 +110,20 @@ class DataSource{   //returns null only if this.label is null
 
 	_loadFixtures(){
 		this._log('imp:', "checking for fixtures");
-		if(!this._cmp) {return;}
+  		if(!this._cmp) {return;}
     	var _cmp_data = this._cmp._getCmpData();
     	if(!_cmp_data){return;}
 
-        if(this._cmp._isDebuggale()){
-        	TRASH_SCOPE.cmd_data = _cmp_data.innerHTML;
-        }
+		if(_cmp_data.innerHTML == "") {return;}
 
-        try{
+		try{
 			var data = JSON.parse(_cmp_data.innerHTML);
 			this._updateData(data);
 			this._log('imp:', "fixtures applied");
+			return data;
 		}catch(e){
 			this._log("imp:", "invalid json in fixtures");
+			return;
 		}
 		
 	}
@@ -160,27 +163,49 @@ class DataSource{   //returns null only if this.label is null
 		return _msg.label === this.label;
 	}
 
-	_onmsg (_msg) {
-		if(!this._authenticateMsg(_msg)){return;}
+	// _onmsg (_msg) {
+	// 	if(!this._authenticateMsg(_msg)){return;}
 
-		console.group(this._logPrefix);
-		this._log("imp:", "got msg - ");
-		if(!_msg.data){return;}
-		var _data = null;
-		try{
-			_data = JSON.parse(_msg.data).data;
-			// JSON.stringify(_data);  // no performance benefit to converting to strings & storing (instead additional steps)
-		}
-		catch(err){
-			this._log("imp:", "socket data received is not valid json;", ' _reason_: ', err);
-		}
-		if(!_data){return;}
+	// 	console.group(this._logPrefix);
+	// 	this._log("imp:", "got msg - ");
+	// 	if(!_msg.data){return;}
+	// 	var _data = null;
+	// 	try{
+	// 		_data = JSON.parse(_msg.data).data;
+	// 		// JSON.stringify(_data);  // no performance benefit to converting to strings & storing (instead additional steps)
+	// 	}
+	// 	catch(err){
+	// 		this._log("imp:", "socket data received is not valid json;", ' _reason_: ', err);
+	// 	}
+	// 	if(!_data){return;}
 
-		console.dir(_data);
+	// 	console.dir(_data);
 
-		this._updateData(_data);
-		console.groupEnd()
-	}
+	// 	this._updateData(_data);
+	// 	console.groupEnd()
+	// }
+
+	_onmsg (msgEv) {
+		var _msgStr = msgEv.data;
+  		try{
+  			var _msg = JSON.parse(_msgStr);
+  		}catch(e){ //not valid msg
+  			return;
+  		}
+
+  		if(!this._authenticateMsg(_msg)){return;}
+
+  		// console.group(this._logPrefix);
+  		
+  		this._log("imp:", "got msg - ");
+
+  		if(_msg.data){
+  			console.dir(_msg.data);
+  			this._updateData(_msg.data);
+  		}
+  		
+  		// console.groupEnd();
+  	}
 }
 
 DataSource._instances = [];
