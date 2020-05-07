@@ -5,8 +5,8 @@ class PostOffice extends Object {
 	// }
 
 
-	static addSocket(name, _url) {
-		PostOffice.sockets[name] = new WebSocket(_url);
+	static addSocket(_constructor, name, _url) {
+		PostOffice.sockets[name] = new PostOffice.Socket(_constructor, name, _url);
 	}
 
 	static _getRegistry() {
@@ -76,6 +76,23 @@ class PostOffice extends Object {
 
 PostOffice.sockets = {};
 PostOffice.registry = [];
+
+PostOffice.Socket = class PostOfficeSocket {
+	constructor(_constructor, name, url) {
+	  var _constructor = _constructor || WebSocket;
+	  this.name = name;
+	  this.url = url;
+	  this.socket = new _constructor(name, url);
+	  this.__init__();
+	}
+
+	__init__() {
+	  // PostOffice.sockets[name] = new WebSocket(_url);
+	  // PostOffice.sockets[name].proxy = {};
+	  // this.socket.
+	}
+}
+
 PostOffice.Broker = class PostOfficeBroker {
 							constructor(_label, _cb, _scope) {
 								this.label = _label;
@@ -96,8 +113,14 @@ PostOffice.Broker = class PostOfficeBroker {
 
 							execute (msg) {
 								this.callbacks.forEach((_cb, idx)=>{
-									console.log("broker executing callback - ", idx);
-									_cb(msg);
+									console.log("PostOffice.Broker executing callback - ", idx);
+									try{  //to prevent an error causing cb block execution of other cbs
+										_cb(msg);
+									}catch(e){
+										console.log("PostOffice.Broker error executing callback - ", idx);
+										return;
+									}
+									console.log("PostOffice.Broker successfully executed callback - ", idx);
 								});
 							}
 					}

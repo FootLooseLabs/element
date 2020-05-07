@@ -30,7 +30,7 @@ class DataSource{   //returns null only if this.label is null
 	    this.socket = socket ? PostOffice.sockets[socket] : null;
 	    this.label = label; //label has to be unique
 	    this.events = [];
-	    this.data = {};
+	    this.data = _cmp.schema || {};
 	    this._cmp = _cmp;
 	    this.comms = {
 	    	"init" : `${this.label}-datasrc-initialised`
@@ -82,6 +82,9 @@ class DataSource{   //returns null only if this.label is null
 			this.socket.addEventListener("message", (msg) => {
 				_this._onmsg.call(_this, msg);
 			});
+			PostOffice.registerBroker(this, this.socketName, (msgEv) => {
+	          _this._onmsg.call(_this, msgEv);
+	        });
 		}
 	}
 

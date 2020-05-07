@@ -8,7 +8,7 @@ class DOMComponent extends HTMLElement {
 
 	static get observedAttributes() { return ['data-update']; }
 
-	defaultLifecycleBrokers (state){
+	defaultLifecycleInterfaces (state){
 		var defaultBrokers = [
 					{state: "datasrcInit", label :"init-data-src-" + this.uid}
 			   ]
@@ -32,6 +32,7 @@ class DOMComponent extends HTMLElement {
 		this.domElName = this.constructor.domElName || opt.domElName;
 		this.uid = randomString(8);
 		this.uiVars = {};
+		this.interfaces = {};
 		this.data_src = null;
 		this.opt = opt;
 	}
@@ -113,7 +114,7 @@ class DOMComponent extends HTMLElement {
 			var label = _cmp_data.getAttribute("label");
 			var socket = _cmp_data.getAttribute("socket");
 			this._log("imp:","initialising component data source");
-			this.__initDataSrcBroker(label);
+			this.__initDataSrcInterface(label);
 			// this.data_src = new DataSource(label, socket, this, proxy);
 			this.data_src = DataSource.getOrCreate(label, socket, this);
 		}
@@ -127,16 +128,16 @@ class DOMComponent extends HTMLElement {
 		}
 	}
 
-	__initDataSrcBroker(label) {
+	__initDataSrcInterface(label) {
 		var _this = this;
 		this.broker = PostOffice.registerBroker(this, label, (ev)=>{
 			_this._onDataSrcUpdate.call(_this, ev)
 		});
 	}
 
-	_initDefaultBrokers(opt) {
+	_initDefaultInterfaces(opt) {
 		// var _this = this;
-		// this.defaultLifecycleBrokers().map((_entry)=>{
+		// this.defaultLifecycleInterfaces().map((_entry)=>{
 		// 	PostOffice.registerBroker(_this, _entry.label, (ev)=>{
 		// 		_this._initComponentDataSrc.call(_this);
 		// 	});
@@ -155,7 +156,7 @@ class DOMComponent extends HTMLElement {
 	_initLifecycle(opt) {
 		this._initUiVars(opt);
 
-		this._initDefaultBrokers(opt);
+		this._initDefaultInterfaces(opt);
 
 		this._initComponentDataSrc(opt);
 
@@ -206,45 +207,90 @@ class DOMComponent extends HTMLElement {
 		});
 	}
 
-	render() { //called from either - 1.) datasrcupdate, 2.) datasrc is null after init, 3.) onattributechange
-		this._log("----------rendering component start---------------");
-		var _this = this;
+  _getChildCmps() {
+    var cmp_dom_node = this._getDomNode();
+    if(!cmp_dom_node){ return []; }
+    return Array.from(cmp_dom_node.querySelectorAll('[data-component]')); 
+  }
 
-		try{
-			var _rendered = this.markupFunc(this.data, this.uid, this.uiVars); //this.prototype returns the class instance invoking this method 
-		}catch(e){
-			console.log("imp:", "following error in render markupFunc - ", e);
-			return;
-		}
-		// this.shadow.innerHTML = _rendered;
+  _processChildCmps() {
+    var _this = this;
+    var childCmpsInDOM = _this._getChildCmps();
+    if(childCmpsInDOM.length==0){return;}
 
-		// this._log("imp:","rendered markupFunc");
-		this._renderedFrag = stringToHTMLFrag(_rendered);
-		// this._log("imp:","rendered fragment");
-		this._renderedFrag.firstElementChild.dataset.component = this.uid;
+    console.log("imp:", "PROCESSING CHILD CMPS");
+    var cmpSelector = DOMComponentRegistry.list().map((_entry)=>{return _entry.name}).join(",");
+    var childCmpsInRenderedFrag = _this._renderedFrag.querySelectorAll(cmpSelector);
 
-		this.__processRenderedFragEventListeners();
-		// this._log("imp:","renderered fragment uid");
-		var cmp_dom_node = this._getDomNode();
-		try{
-			if(cmp_dom_node){
-				// cmp_dom_node.outerHTML = _rendered;
-				cmp_dom_node.replaceWith(this._renderedFrag); //case when a rendered custom element re-rendering (after some data update)
-			}else{
-				// this.outerHTML = _rendered; //case when custom element in the html is rendered for the 1st time
-				this.replaceWith(this._renderedFrag);
-			}
-			// this._log("imp:","cmpdomnode = ", cmp_dom_node);
-			
-		}catch(e){
-			this._log("imp:","(ERROR) - component rendering failed with the following error - \n", e);
-		}
 
-		TRASH_SCOPE.debugLastRenderedCmp = this;
-		this._log("----------rendering component end-----------------");
-		
-		return this
-	}
+    childCmpsInRenderedFrag.forEach((_childCmpInFrag, fragCmpIdx)=>{
+      var _childCmpInDom = childCmpsInDOM.find((_cmp, domCmpIdx)=>{
+        return _cmp.constructedFrom.domElName == _childCmpInFrag.tagName.toLowerCase()
+      });
+      if(_childCmpInDom){
+        _childCmpInFrag.replaceWith(_childCmpInDom);
+        // _childCmpInDom.render();
+      }
+      // childCmpsInDOM.splice(domCmpIdx, 1);
+      // childCmpsInDOM.shift();
+    });
+
+    // childCmpsInDOM.forEach((_childCmp, idx)=>{ //would not work if 2 child elements of the same type
+    //   try{
+    //     _this._renderedFrag.querySelector(_childCmp.dataset.cmpname).replaceWith(_childCmp);
+    //   }catch(e){}
+    // })
+  }
+
+  render() { //called from either - 1.) datasrcupdate, 2.) datasrc is null after init, 3.) onattributechange
+    this._log("----------rendering component start---------------");
+    var _this = this;
+    var cmp_dom_node = this._getDomNode();
+
+    try{
+      var _rendered = this.markupFunc(this.data, this.uid, this.uiVars); //this.prototype returns the class instance invoking this method 
+    }catch(e){
+      console.log("imp:", "following error in render markupFunc - ", e);
+      return;
+    }
+    // this.shadow.innerHTML = _rendered;
+
+    // this._log("imp:","rendered markupFunc");
+    this._renderedFrag = stringToHTMLFrag(_rendered);
+    // this._log("imp:","rendered fragment");
+
+    if(this.attributes.stop){
+      TRASH_SCOPE.stoppedCmp = this;
+      return;
+    }
+
+    // this._processChildCmps();
+
+    this._renderedFrag.firstElementChild.dataset.component = this.uid;
+    Reflect.defineProperty(this._renderedFrag.firstElementChild, "constructedFrom", {value: this});
+
+    this.__processRenderedFragEventListeners();
+    // this._log("imp:","renderered fragment uid");
+    
+    try{
+      if(cmp_dom_node){
+        // cmp_dom_node.outerHTML = _rendered;
+        cmp_dom_node.replaceWith(this._renderedFrag); //case when a rendered custom element re-rendering (after some data update)
+      }else{
+        // this.outerHTML = _rendered; //case when custom element in the html is rendered for the 1st time
+        this.replaceWith(this._renderedFrag);
+      }
+      // this._log("imp:","cmpdomnode = ", cmp_dom_node);
+      
+    }catch(e){
+      this._log("imp:","(ERROR) - component rendering failed with the following error - \n", e);
+    }
+
+    TRASH_SCOPE.debugLastRenderedCmp = this;
+    this._log("----------rendering component end-----------------");
+    
+    return this
+  }
 	
 }
 

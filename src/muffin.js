@@ -1,22 +1,13 @@
 window.LOGGING_LEVEL = "NODEBUG";
 window.TRASH_SCOPE = {};
 
-(() => {
-	var __log = console.log;
-	console.log = function() {
-		if(window.LOGGING_LEVEL == "NONE"){return;}
+window.MUFFIN_CONFIG = {
+	"LOGGING_LEVEL" : "IMP",
+	"POST_OFFICE_WORKER_URL": "muffin_po_worker.js"
+};
+window.muffin = {};
 
-		if(arguments[0]==="imp:"){
-			var argumentsArr = Array.prototype.slice.call(arguments);
-			var msgArr = argumentsArr.slice(1,argumentsArr.length)
-			__log.apply(this, msgArr);
-		}
-		if(window.LOGGING_LEVEL !== "DEBUG"){return;}
-    	__log.apply(this, arguments);
-	}
-})();
-
-
+import { Logger } from "./logger.js";
 import { DOMComponentRegistry, DataSource, PostOffice, DOMComponent } from "./dom_component.js";
 import { Router } from "./router.js";
 import "./include.js";
@@ -26,7 +17,15 @@ import "./include.js";
 // 	DOMComponentRegistry.register(this);
 // }
 
+Logger.start();
 DOMComponentRegistry.start();
+
+window.muffin.Router = Router;
+window.muffin.PostOffice = PostOffice;
+window.muffin.DOMComponentRegistry = DOMComponentRegistry;
+window.muffin.DataSource = DataSource;
+window.muffin.DOMComponent = DOMComponent;
+
 window.Router = Router;
 window.PostOffice = PostOffice;
 window.DOMComponentRegistry = DOMComponentRegistry;

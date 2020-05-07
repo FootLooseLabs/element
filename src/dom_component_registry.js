@@ -25,6 +25,12 @@ class DOMComponentRegistry {
 		return this.components;
 	}
 
+	static has(domElName){
+		DOMComponentRegistry.list().find((_entry)=>{
+			return _entry.name == domElName;
+		})
+	}
+
 	static register(webComp) {
 		if(typeof webComp.domElName == "function"){
 			var webCompDomName = webComp.domElName();
@@ -33,6 +39,9 @@ class DOMComponentRegistry {
 		}
 		customElements.define(webCompDomName, webComp);
 		DOMComponentRegistry.add(webComp);
+		if(webComp.register){
+			webComp.register();
+		}
 	}
 }
 
