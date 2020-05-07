@@ -12,9 +12,16 @@ export default {
   format: 'iife',
   sourceMap: 'inline',
   plugins: [
-    babel({
-      include: 'node_modules/localforages'
-    }),
+    babel(
+      {
+        "plugins": [
+          ["transform-class-properties", { "spec": true }]
+        ]
+      },
+      {
+        include: 'node_modules/localforages'
+      }
+    ),
     resolve({
       jsnext: true,
       main: true,

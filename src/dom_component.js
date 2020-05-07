@@ -65,7 +65,11 @@ class DOMComponent extends HTMLElement {
 		this._log("initialising with ", opt);
 
 		this.shadow = this.attachShadow({mode: opt.domMode || "open"});
+
 		this.markupFunc = this.constructor.markupFunc || opt.markupFunc;
+
+		this.styleMarkup = this.constructor.styleMarkup || opt.styleMarkup;
+
 		this.processData = this.constructor.processData || opt.processData;
 	
 		if(!this.markupFunc){
@@ -130,6 +134,8 @@ class DOMComponent extends HTMLElement {
 
 	__initDataSrcInterface(label) {
 		var _this = this;
+
+
 		this.broker = PostOffice.registerBroker(this, label, (ev)=>{
 			_this._onDataSrcUpdate.call(_this, ev)
 		});
@@ -177,6 +183,21 @@ class DOMComponent extends HTMLElement {
 		}
 		return newData;
 		// console.groupEnd();
+	}
+
+	__processStyleMarkup() {
+		if(!this.styleMarkup){return;}
+		if(this._renderedStyle){return;}
+
+	    try{
+	    	var _renderedStyleString = this.styleMarkup(`[data-component=${this.uid}]`);  //called only once
+	    	this._renderedStyle = stringToHTMLFrag(_renderedStyleString);
+	    }catch(e){
+	      console.log("imp:", "error in rendering style - ", e);
+	      return;
+	    }
+
+	    this._renderedFrag.prepend(this._renderedStyle);
 	}
 
 	__processRenderedFragEventListeners () {
@@ -248,9 +269,9 @@ class DOMComponent extends HTMLElement {
     var cmp_dom_node = this._getDomNode();
 
     try{
-      var _rendered = this.markupFunc(this.data, this.uid, this.uiVars); //this.prototype returns the class instance invoking this method 
+      var _rendered = this.markupFunc(this.data, this.uid, this.uiVars, this.constructor); 
     }catch(e){
-      console.log("imp:", "following error in render markupFunc - ", e);
+      console.log("imp:", "error in rendering component - ", e);
       return;
     }
     // this.shadow.innerHTML = _rendered;
@@ -269,6 +290,8 @@ class DOMComponent extends HTMLElement {
     this._renderedFrag.firstElementChild.dataset.component = this.uid;
     Reflect.defineProperty(this._renderedFrag.firstElementChild, "constructedFrom", {value: this});
 
+
+    this.__processStyleMarkup();
     this.__processRenderedFragEventListeners();
     // this._log("imp:","renderered fragment uid");
     

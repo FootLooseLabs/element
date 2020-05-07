@@ -24,4 +24,6 @@ Logger.start = () => {
 	}
 };
 
-export Logger
+export { 
+	Logger
+}

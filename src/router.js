@@ -69,7 +69,7 @@ Router.prototype._initListeners = function(){
 
 	document.addEventListener('DOMContentLoaded', (e) => {
 		var routeName = _this.getCurrentRoute();
-		setTimeout(()=>{_this.go(routeName)},1000);
+		_this.go(routeName);
 	},false);
 }
 
@@ -78,6 +78,11 @@ Router.prototype.getDefaultRoute = function(){
 	return this.routes.filter(function(route){
 		return route.defaultRoute === true;
 	})[0] || {};
+}
+
+Router.prototype.addDefaultRoute = function(route_name, url_params) {
+	var routeObj = this.getOrCreateRoute(route_name, url_params);
+	routeObj.defaultRoute = true;
 }
 
 Router.prototype.getRoute = function(route_name){
