@@ -21,19 +21,28 @@ class DOMComponent extends HTMLElement {
 		return defaultBrokers;
 	}
 
+	static defaultStateSpace = {
+		"idle" : {apriori:[]}
+	}
+
 	constructor(opt){
 		super();
 		if(this._isDebuggale()){
 			TRASH_SCOPE._debugCmp = this;
 		}
 		var opt = opt || {};
+
 		this.data = this.constructor.schema || {};
 		this.schema = this.constructor.schema || {};
 		this.domElName = this.constructor.domElName || opt.domElName;
+		this.interfaces = this.constructor.interfaces || opt.interfaces;
+		this.stateSpace = this.constructor.stateSpace || opt.stateSpace;
+		this.transitionSpace = {};
+
 		this.uid = randomString(8);
 		this.uiVars = {};
-		this.interfaces = {};
 		this.data_src = null;
+		this.current_state = "idle";
 		this.opt = opt;
 	}
 
@@ -42,6 +51,7 @@ class DOMComponent extends HTMLElement {
 		var opt = this.opt;
 		this.__init__(opt);
 		if(this.onConnect) {
+			this.switchToIdleState(); //default state switch to idle (NOTE - before calling the onConnect method of the instance)
 			this.onConnect.call(this);
 		}
 	}
@@ -58,6 +68,7 @@ class DOMComponent extends HTMLElement {
 	__init__(opt) {
 		var _this = this;
 		this._initLogging();
+		this._initStateSpace();
 
 		this._log("imp:","DOMELName = ", this.domElName);
 		this._log("imp:","component data/schema = ");
@@ -79,9 +90,25 @@ class DOMComponent extends HTMLElement {
 
 		this._initLifecycle(opt);
 
+		this._composeAncesstry();
+
 		this._log("imp:", "initialised");
 
 		console.groupEnd();
+	}
+
+	getParent() {
+	  	return DOMComponentRegistry.findInstance(this.parent);
+	}
+
+	_composeAncesstry() {
+		DOMComponentRegistry.update(this);
+
+	  	if(this.attributes.parent){
+	    	this.parent = this.attributes.parent.value;
+	   	}
+	   	
+	   	console.log("composed ancesstory ", this.domElName, ", ", this.uid);
 	}
 
 	_initLogging() {
@@ -124,7 +151,7 @@ class DOMComponent extends HTMLElement {
 		}
 		if(this.data_src){
 		 	Object.defineProperty(this, 'data', {
-		        get: ()=>{return this.postProcessCmpData.call(this, this.data_src.data);}
+		        get: ()=>{return this._postProcessCmpData.call(this, this.data_src.data);}
 		    });
 		}else{  //happens when _cmd_data is null or label is null
 			this._log("imp:","component data is null, directly rendering the component.");
@@ -136,12 +163,26 @@ class DOMComponent extends HTMLElement {
 		var _this = this;
 
 
-		this.broker = PostOffice.registerBroker(this, label, (ev)=>{
-			_this._onDataSrcUpdate.call(_this, ev)
+		this.broker = PostOffice.registerBroker(this, label, (_msg)=>{
+			_this._onDataSrcUpdate.call(_this, _msg)
 		});
 	}
 
-	_initDefaultInterfaces(opt) {
+	_initStateSpace(){
+		this.stateSpace = {...this.defaultStateSpace , ...this.stateSpace }
+	}
+
+	_initInterfaces(opt) {
+		if(!this.interfaces){return;}
+
+		var _this = this;
+
+		for(var key in this.interfaces) {
+			PostOffice.registerBroker(this, `${this.uid}-${key}`, (_msg)=>{
+				var response = _this.interfaces[key](_msg);
+				PostOffice.broadcastMsg(`${_msg.sender}-${key}`, new Muffin.ComponentMsg({data: response}))
+			});
+		}
 		// var _this = this;
 		// this.defaultLifecycleInterfaces().map((_entry)=>{
 		// 	PostOffice.registerBroker(_this, _entry.label, (ev)=>{
@@ -162,13 +203,13 @@ class DOMComponent extends HTMLElement {
 	_initLifecycle(opt) {
 		this._initUiVars(opt);
 
-		this._initDefaultInterfaces(opt);
+		this._initInterfaces(opt);
 
 		this._initComponentDataSrc(opt);
 
 	}
 
-	postProcessCmpData(newData) {
+	_postProcessCmpData(newData) {
 		// console.group(this._logPrefix+"postProcessData");
 		this._log("imp:","Post-Processing cmp data (label = " + this.data_src.label + "), data = ");
 		console.dir(newData);
@@ -190,10 +231,10 @@ class DOMComponent extends HTMLElement {
 		if(this._renderedStyle){return;}
 
 	    try{
-	    	var _renderedStyleString = this.styleMarkup(`[data-component=${this.uid}]`);  //called only once
+	    	var _renderedStyleString = this.styleMarkup(`[data-component=${this.uid}]`,this.current_state);  //called only once
 	    	this._renderedStyle = stringToHTMLFrag(_renderedStyleString);
 	    }catch(e){
-	      console.log("imp:", "error in rendering style - ", e);
+	      this._log("imp:", "error in rendering style - ", e);
 	      return;
 	    }
 
@@ -228,92 +269,187 @@ class DOMComponent extends HTMLElement {
 		});
 	}
 
-  _getChildCmps() {
-    var cmp_dom_node = this._getDomNode();
-    if(!cmp_dom_node){ return []; }
-    return Array.from(cmp_dom_node.querySelectorAll('[data-component]')); 
-  }
+	_getChildCmps() {
+	    var cmp_dom_node = this._getDomNode();
+	    if(!cmp_dom_node){ return []; }
+	    return Array.from(cmp_dom_node.querySelectorAll('[data-component]')); 
+	}
 
-  _processChildCmps() {
-    var _this = this;
-    var childCmpsInDOM = _this._getChildCmps();
-    if(childCmpsInDOM.length==0){return;}
+  	_processChildCmps() {
+	    var _this = this;
+	    var childCmpsInDOM = _this._getChildCmps();
+	    if(childCmpsInDOM.length==0){return;}
 
-    console.log("imp:", "PROCESSING CHILD CMPS");
-    var cmpSelector = DOMComponentRegistry.list().map((_entry)=>{return _entry.name}).join(",");
-    var childCmpsInRenderedFrag = _this._renderedFrag.querySelectorAll(cmpSelector);
-
-
-    childCmpsInRenderedFrag.forEach((_childCmpInFrag, fragCmpIdx)=>{
-      var _childCmpInDom = childCmpsInDOM.find((_cmp, domCmpIdx)=>{
-        return _cmp.constructedFrom.domElName == _childCmpInFrag.tagName.toLowerCase()
-      });
-      if(_childCmpInDom){
-        _childCmpInFrag.replaceWith(_childCmpInDom);
-        // _childCmpInDom.render();
-      }
-      // childCmpsInDOM.splice(domCmpIdx, 1);
-      // childCmpsInDOM.shift();
-    });
-
-    // childCmpsInDOM.forEach((_childCmp, idx)=>{ //would not work if 2 child elements of the same type
-    //   try{
-    //     _this._renderedFrag.querySelector(_childCmp.dataset.cmpname).replaceWith(_childCmp);
-    //   }catch(e){}
-    // })
-  }
-
-  render() { //called from either - 1.) datasrcupdate, 2.) datasrc is null after init, 3.) onattributechange
-    this._log("----------rendering component start---------------");
-    var _this = this;
-    var cmp_dom_node = this._getDomNode();
-
-    try{
-      var _rendered = this.markupFunc(this.data, this.uid, this.uiVars, this.constructor); 
-    }catch(e){
-      console.log("imp:", "error in rendering component - ", e);
-      return;
-    }
-    // this.shadow.innerHTML = _rendered;
-
-    // this._log("imp:","rendered markupFunc");
-    this._renderedFrag = stringToHTMLFrag(_rendered);
-    // this._log("imp:","rendered fragment");
-
-    if(this.attributes.stop){
-      TRASH_SCOPE.stoppedCmp = this;
-      return;
-    }
-
-    // this._processChildCmps();
-
-    this._renderedFrag.firstElementChild.dataset.component = this.uid;
-    Reflect.defineProperty(this._renderedFrag.firstElementChild, "constructedFrom", {value: this});
+	    this._log("imp:", "PROCESSING CHILD CMPS");
+	    var cmpSelector = DOMComponentRegistry.list().map((_entry)=>{return _entry.name}).join(",");
+	    var childCmpsInRenderedFrag = _this._renderedFrag.querySelectorAll(cmpSelector);
 
 
-    this.__processStyleMarkup();
-    this.__processRenderedFragEventListeners();
-    // this._log("imp:","renderered fragment uid");
-    
-    try{
-      if(cmp_dom_node){
-        // cmp_dom_node.outerHTML = _rendered;
-        cmp_dom_node.replaceWith(this._renderedFrag); //case when a rendered custom element re-rendering (after some data update)
-      }else{
-        // this.outerHTML = _rendered; //case when custom element in the html is rendered for the 1st time
-        this.replaceWith(this._renderedFrag);
-      }
-      // this._log("imp:","cmpdomnode = ", cmp_dom_node);
-      
-    }catch(e){
-      this._log("imp:","(ERROR) - component rendering failed with the following error - \n", e);
+	    childCmpsInRenderedFrag.forEach((_childCmpInFrag, fragCmpIdx)=>{
+	      var _childCmpInDom = childCmpsInDOM.find((_cmp, domCmpIdx)=>{
+	        return _cmp.constructedFrom.domElName == _childCmpInFrag.tagName.toLowerCase()
+	      });
+	      if(_childCmpInDom){
+	        _childCmpInFrag.replaceWith(_childCmpInDom);
+	        // _childCmpInDom.render();
+	      }
+	      // childCmpsInDOM.splice(domCmpIdx, 1);
+	      // childCmpsInDOM.shift();
+	    });
+
+	    // childCmpsInDOM.forEach((_childCmp, idx)=>{ //would not work if 2 child elements of the same type
+	    //   try{
+	    //     _this._renderedFrag.querySelector(_childCmp.dataset.cmpname).replaceWith(_childCmp);
+	    //   }catch(e){}
+	    // })
+  	}
+
+  	switchState(stateName) {
+        var targetState = this.stateSpace[stateName];
+        if (!targetState) { return; }
+        var prevStateName = this.current_state;
+
+        if( targetState.apriori.includes(prevStateName) ){ //only these transitions are allowed. this is to ensure reliability of behviours.
+        	var transition = this.transitionSpace[`${prevStateName} <to> ${stateName}`];
+	        if(transition){
+	        	try{
+	        		transition.call(this);
+	        		this._log("imp:", "Transition fired - ", `${prevStateName} <to> ${stateName}`);
+	        		//if transition is successful (doesn't throw any error) -->
+	        		this.current_state = stateName;
+        			this.uiVars.state = { name: stateName, meta: targetState};
+	        		this.render();
+	        	}catch(e){
+	        		this._log("imp:", "Transition error - ", e);
+	        	}
+	        }else{
+	        	this.current_state = stateName;
+        		this.uiVars.state = { name: stateName, meta: targetState};
+        		this.render();
+	        }
+	        this._log("imp:", "Switched State To - ", this.current_state);
+        }
+
+        return this.current_state;
+        // this._updateDomNodeState();
+        // if(state.informParent){
+        //     this._broadCastToParent(this.uiVars.current_state);
+        // }
     }
 
-    TRASH_SCOPE.debugLastRenderedCmp = this;
-    this._log("----------rendering component end-----------------");
-    
-    return this
-  }
+    switchToIdleState({stateName = "idle"} = {}) {
+    	var targetState = this.stateSpace[stateName];
+        if (!targetState) { return; }
+        this.current_state = stateName;
+        this.uiVars.state = { name: stateName, meta: targetState};
+        return this.current_state;
+    }
+
+    __processRootMarkup() {
+    	this._renderedFrag.firstElementChild.dataset.component = this.uid;
+	    Reflect.defineProperty(this._renderedFrag.firstElementChild, "constructedFrom", {value: this});
+	    // this._renderedFrag.querySelectorAll('[uiVar]').forEach((uiVarEl, idx)=>{
+	    // 	uiVarEl.dataset.uid = `${this.uid}-uiVar-${idx}`; 
+	    // });
+    }
+
+    __processConditionalMarkup() {
+	  	this._renderedFrag.querySelectorAll("[render-if]").forEach((_el)=>{
+	  		if(!eval(_el.getAttribute("render-if"))){
+	  			_el.style.display = "none";
+	  		}
+	  	});
+	  }
+
+
+    __patchDOM() {
+    	if(this.attributes.stop){
+	      TRASH_SCOPE.stoppedCmp = this;
+	      return;
+	    }
+
+	    var in_dom = this._getDomNode();
+    	var cmp_dom_node = in_dom || this;
+
+    	try {
+    		var _renderedFragRootNode = this._renderedFrag.firstElementChild; 
+	        if(cmp_dom_node.isEqualNode(_renderedFragRootNode)){return;}
+
+	        if(_renderedFragRootNode.children.length==0){
+	        	cmp_dom_node.replaceWith(this._renderedFrag);
+	        	return;
+	        }
+
+	        if(cmp_dom_node.children.length == _renderedFragRootNode.children.length && in_dom){
+		        Array.from(_renderedFragRootNode.children).forEach((_renderedFragChild, idx)=>{
+		        	var cmpDOMFragChild = cmp_dom_node.children[idx];
+		        	if(!cmpDOMFragChild.isEqualNode(_renderedFragChild) && !cmpDOMFragChild.attributes.renderonlyonce){  //this would in its current state skip patching some changes like event listeners addded via javascript.
+		        		cmp_dom_node.replaceChild(_renderedFragChild, cmpDOMFragChild);	
+		        	}
+		        });
+		    }else{
+	        	cmp_dom_node.replaceWith(this._renderedFrag);
+	      	}
+    	}catch(e){
+    		this._log("imp:","(ERROR) - component rendering failed with the following error - \n", e);
+    	}
+
+    	// try{
+    	// 	var _renderedFragRootNode = this._renderedFrag.firstElementChild; 
+	    //     // cmp_dom_node.outerHTML = _rendered;
+	    //     if(cmp_dom_node.isEqualNode(_renderedFragRootNode)){return;}
+
+	    //     // console.log("imp:", cmp_dom_node.children.length, " ?==? ", this._renderedFrag.firstElementChild.children.length);
+
+	    //     if(cmp_dom_node.children.length == _renderedFragRootNode.children.length && this._getDomNode()){
+		   //      Array.from(_renderedFragRootNode.children).forEach((_renderedFragChild, idx)=>{
+		   //      	var cmpDOMFragChild = cmp_dom_node.children[idx];
+		   //      	if(!cmpDOMFragChild.isEqualNode(_renderedFragChild)){  //this would in its current state skip patching some changes like event listeners addded via javascript.
+		   //      		cmp_dom_node.replaceChild(_renderedFragChild, cmpDOMFragChild);	
+		   //      	}
+		   //      });
+		   //  }else{
+	    //     	cmp_dom_node.replaceWith(this._renderedFrag);
+	    //   	}
+	    //   	// this._log("imp:","cmpdomnode = ", cmp_dom_node);
+	    // }catch(e){
+	    //   this._log("imp:","(ERROR) - component rendering failed with the following error - \n", e);
+	    // }
+    }
+
+  	render() { //called from either - 1.) datasrcupdate, 2.) datasrc is null after init, 3.) onattributechange, 4.) stateChange
+	    this._log("----------rendering component start---------------");
+	    var _this = this;
+
+	    try{
+	      var _rendered = this.markupFunc(this.data, this.uid, this.uiVars, this.constructor); 
+	    }catch(e){
+	      this._log("imp:", "error in rendering component - ", e);
+	      return;
+	    }
+	    // this.shadow.innerHTML = _rendered;
+	    // this._log("imp:","rendered markupFunc");
+	    this._renderedFrag = stringToHTMLFrag(_rendered);
+	    // this._log("imp:","rendered fragment");
+
+	    // this._processChildCmps();
+
+	    this.__processRootMarkup();
+
+	    this.__processConditionalMarkup();
+
+	    this.__processStyleMarkup();
+
+	    this.__processRenderedFragEventListeners();
+	    // this._log("imp:","renderered fragment uid");
+	    
+	    this.__patchDOM();
+
+	    TRASH_SCOPE.debugLastRenderedCmp = this;
+	    this._log("----------rendering component end-----------------");
+	    
+	    return this
+  	}
 	
 }
 
@@ -338,6 +474,26 @@ DOMComponent.prototype._binding = function(b) {
 
     this.element[this.attribute] = this.value;
 }
+
+
+DOMComponent._composeSelf = function(){
+	DOMComponentRegistry.register(this.prototype.constructor);
+}
+
+DOMComponent._compose = function(){
+	this.prototype.constructor._composeSelf();
+}
+
+Object.defineProperty(DOMComponent, "compose", { //what if 2 parents are composing the same child
+	get: function(){return this._compose},
+	set: function(composeFunc){ 
+			this._compose = function(){
+			// console.log("imp:","Updating Compose function of component ",this);
+			this.prototype.constructor._composeSelf();
+			composeFunc.call(this);
+		} 
+	}
+});
 
 
 export {

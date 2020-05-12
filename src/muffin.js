@@ -5,7 +5,7 @@ window.MUFFIN_CONFIG = {
 	"LOGGING_LEVEL" : "IMP",
 	"POST_OFFICE_WORKER_URL": "muffin_po_worker.js"
 };
-window.muffin = {};
+window.Muffin = {};
 
 import { Logger } from "./logger.js";
 import { DOMComponentRegistry, DataSource, PostOffice, DOMComponent } from "./dom_component.js";
@@ -20,11 +20,11 @@ import "./include.js";
 Logger.start();
 DOMComponentRegistry.start();
 
-window.muffin.Router = Router;
-window.muffin.PostOffice = PostOffice;
-window.muffin.DOMComponentRegistry = DOMComponentRegistry;
-window.muffin.DataSource = DataSource;
-window.muffin.DOMComponent = DOMComponent;
+window.Muffin.Router = Router;
+window.Muffin.PostOffice = PostOffice;
+window.Muffin.DOMComponentRegistry = DOMComponentRegistry;
+window.Muffin.DataSource = DataSource;
+window.Muffin.DOMComponent = DOMComponent;
 
 window.Router = Router;
 window.PostOffice = PostOffice;

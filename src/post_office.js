@@ -82,7 +82,7 @@ PostOffice.Socket = class PostOfficeSocket {
 	  var _constructor = _constructor || WebSocket;
 	  this.name = name;
 	  this.url = url;
-	  this.socket = new _constructor(name, url);
+	  this.socket = new _constructor(url);
 	  this.__init__();
 	}
 
@@ -90,6 +90,10 @@ PostOffice.Socket = class PostOfficeSocket {
 	  // PostOffice.sockets[name] = new WebSocket(_url);
 	  // PostOffice.sockets[name].proxy = {};
 	  // this.socket.
+	}
+
+	send(msg) {
+		this.socket.send(msg)
 	}
 }
 
@@ -123,6 +127,62 @@ PostOffice.Broker = class PostOfficeBroker {
 									console.log("PostOffice.Broker successfully executed callback - ", idx);
 								});
 							}
+					}
+
+
+PostOffice.Message = class PostOfficeMessage {
+
+					    static schema = {};
+
+					    constructor(msg) {
+					        this.msg = {...this.constructor.schema,...msg}
+					    }
+
+					    shout() {
+					        console.log("Message shouted");
+					    }
+
+					    hasKey(key) {
+					        var _this = this;
+					        var keyList = key.split(".");
+					        if(keyList.length == 1){
+					            return key in this.msg;
+					        }
+
+					        var _msg = this.msg;
+					        var keyIdx = 0;
+
+					        var result = true;  //need to figure out a proper way for this initial value to be false (currently insecure)
+					        while (keyIdx < keyList.length) {
+					            var _keyToTest = keyList[keyIdx];
+					            if(_keyToTest in _msg) {
+					                _msg = _msg[_keyToTest];
+					                i+=1;
+					                continue;
+					            }
+					            result = false;
+					            break;
+					        }
+					        return result;
+					    }
+
+					    hasKeys() {
+					        var _this = this;
+					        var result = true;  //need to figure out a proper way for this initial value to be false (currently insecure)
+					        Array.from(arguments).forEach((key)=>{
+					            if(!_this.hasKey(key)){valid=false};
+					        });
+					        return result;
+					    }
+
+					    update(msg) {
+					        this.msg = {...this.msg,...msg}
+					        return this;
+					    }
+
+					    stringify() {
+					      return JSON.stringify(this.msg);
+					    }
 					}
 
 

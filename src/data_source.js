@@ -79,7 +79,7 @@ class DataSource{   //returns null only if this.label is null
 		}
 		var _this = this;
 		if(this.socket){
-			this.socket.addEventListener("message", (msg) => {
+			this.socket.socket.addEventListener("message", (msg) => {
 				_this._onmsg.call(_this, msg);
 			});
 			PostOffice.registerBroker(this, this.socketName, (msgEv) => {
@@ -145,7 +145,7 @@ class DataSource{   //returns null only if this.label is null
 	// }
 
 	_updateData (_data) {
-		console.log("attempting data update");
+		this._log("attempting data update");
 		var _this = this;
 		if(this._cmp._isDebuggale()){
 			TRASH_SCOPE.cmp_data_src = this;

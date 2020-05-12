@@ -1,6 +1,6 @@
 import PostOffice from "./post_office.js";
 
-class MuffinComponentInterface extends Interface {
+class MuffinComponentInterface extends PostOffice.Message {
 	static schema = {
 		"sender": null,
 		"label": "",
@@ -19,7 +19,7 @@ class MuffinComponentInterface extends Interface {
 	}
 }
 
-class MuffinComponentResponse extends Interface {
+class MuffinComponentResponse extends PostOffice.Message {
 	static schema = {
 		"sender": null,
 		"label": "",

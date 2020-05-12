@@ -18,15 +18,27 @@ class DOMComponentRegistry {
 
 	static add(webComp){
 		// customElements.define(webComp.domElName, webComp);
-		DOMComponentRegistry.components.push({name:webComp.domElName, uid: webComp.uid});
+		DOMComponentRegistry.components.push({name:webComp.domElName, error: webComp.error, instances: []});
 		PostOffice.broadcastMsg(DOMComponentRegistry.brokerLabel(),{name: webComp.domElName}, document);
 	}
 	static list(){
 		return this.components;
 	}
 
-	static has(domElName){
-		DOMComponentRegistry.list().find((_entry)=>{
+	static findInstance(uid) {
+	  	var parent = null;
+	    var entry = DOMComponentRegistry.list().find(_entry => {
+	      parent = _entry.instances.find((_instance)=>{
+	      	return _instance.uid == uid;
+	      });
+	      return parent;
+	    });
+
+	    return parent;
+	}
+
+	static find(domElName){
+		return DOMComponentRegistry.list().find((_entry)=>{
 			return _entry.name == domElName;
 		})
 	}
@@ -37,10 +49,22 @@ class DOMComponentRegistry {
 		}else{
 			var webCompDomName = webComp.domElName;
 		}
-		customElements.define(webCompDomName, webComp);
+		try{
+			customElements.define(webCompDomName, webComp);
+		}catch(e){
+			webComp.error = e;
+			console.log("imp:", e);
+		}
 		DOMComponentRegistry.add(webComp);
-		if(webComp.register){
-			webComp.register();
+		// if(webComp.register){
+		// 	webComp.register();
+		// }
+	}
+
+	static update(instance) {
+		var _entry = DOMComponentRegistry.find(instance.domElName);
+		if(_entry){
+			_entry.instances.push(instance);
 		}
 	}
 }
