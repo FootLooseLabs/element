@@ -39,11 +39,13 @@ class DOMComponent extends HTMLElement {
 		this.stateSpace = this.constructor.stateSpace || opt.stateSpace;
 		this.transitionSpace = {};
 
-		this.uid = randomString(8);
+		this.uid = this.uid || randomString(8);
+		this.composedScope = {};
 		this.uiVars = {};
 		this.data_src = null;
 		this.current_state = "idle";
 		this.opt = opt;
+		this.eventTarget = new EventTarget();
 	}
 
 
@@ -88,9 +90,9 @@ class DOMComponent extends HTMLElement {
 			return;
 		}
 
-		this._initLifecycle(opt);
-
 		this._composeAncesstry();
+
+		this._initLifecycle(opt);
 
 		this._log("imp:", "initialised");
 
@@ -101,11 +103,21 @@ class DOMComponent extends HTMLElement {
 	  	return DOMComponentRegistry.findInstance(this.parent);
 	}
 
+	// _nameChild(_instance) {
+	//   	var name = randomString(8);
+	//   	_instance.uid = name;
+	//   	this.childCmps.push(_instance);
+	// }
+
 	_composeAncesstry() {
 		DOMComponentRegistry.update(this);
 
 	  	if(this.attributes.parent){
 	    	this.parent = this.attributes.parent.value;
+
+	    	if(this.attributes.childscope){
+		      	this.getParent().composedScope[this.attributes.childscope.value] = this;
+		    }
 	   	}
 	   	
 	   	console.log("composed ancesstory ", this.domElName, ", ", this.uid);
@@ -145,9 +157,9 @@ class DOMComponent extends HTMLElement {
 			var label = _cmp_data.getAttribute("label");
 			var socket = _cmp_data.getAttribute("socket");
 			this._log("imp:","initialising component data source");
-			this.__initDataSrcInterface(label);
 			// this.data_src = new DataSource(label, socket, this, proxy);
 			this.data_src = DataSource.getOrCreate(label, socket, this);
+			this.__initDataSrcInterface(label);
 		}
 		if(this.data_src){
 		 	Object.defineProperty(this, 'data', {
@@ -162,14 +174,20 @@ class DOMComponent extends HTMLElement {
 	__initDataSrcInterface(label) {
 		var _this = this;
 
-
-		this.broker = PostOffice.registerBroker(this, label, (_msg)=>{
-			_this._onDataSrcUpdate.call(_this, _msg)
+		this.broker = this.data_src.eventTarget.addEventListener(label, (ev)=>{
+			_this._onDataSrcUpdate.call(_this, ev);
 		});
+		// this.broker = PostOffice.registerBroker(this, label, (_msg)=>{
+		// 	_this._onDataSrcUpdate.call(_this, _msg)
+		// });
 	}
 
 	_initStateSpace(){
 		this.stateSpace = {...this.defaultStateSpace , ...this.stateSpace }
+	}
+
+	addInterface() {
+
 	}
 
 	_initInterfaces(opt) {
@@ -227,8 +245,10 @@ class DOMComponent extends HTMLElement {
 	}
 
 	__processStyleMarkup() {
-		if(!this.styleMarkup){return;}
-		if(this._renderedStyle){return;}
+		if(!this.styleMarkup){
+			return;
+		}
+		// if(this._renderedStyle){return;}
 
 	    try{
 	    	var _renderedStyleString = this.styleMarkup(`[data-component=${this.uid}]`,this.current_state);  //called only once
@@ -238,7 +258,7 @@ class DOMComponent extends HTMLElement {
 	      return;
 	    }
 
-	    this._renderedFrag.prepend(this._renderedStyle);
+	    this._renderedFrag.firstElementChild.prepend(this._renderedStyle);
 	}
 
 	__processRenderedFragEventListeners () {
@@ -347,19 +367,59 @@ class DOMComponent extends HTMLElement {
 
     __processRootMarkup() {
     	this._renderedFrag.firstElementChild.dataset.component = this.uid;
+    	// this.dataset.uid = this.uid;
 	    Reflect.defineProperty(this._renderedFrag.firstElementChild, "constructedFrom", {value: this});
 	    // this._renderedFrag.querySelectorAll('[uiVar]').forEach((uiVarEl, idx)=>{
 	    // 	uiVarEl.dataset.uid = `${this.uid}-uiVar-${idx}`; 
 	    // });
     }
 
-    __processConditionalMarkup() {
-	  	this._renderedFrag.querySelectorAll("[render-if]").forEach((_el)=>{
-	  		if(!eval(_el.getAttribute("render-if"))){
-	  			_el.style.display = "none";
-	  		}
-	  	});
-	  }
+    __processConditionalMarkup(_el) { //to be optimised later
+	  	if(!_el){
+	  		this._renderedFrag.querySelectorAll("[render-if]").forEach((_el)=>{
+		  		if(!eval(_el.getAttribute("render-if"))){
+		  			_el.style.display = "none";
+		  		}
+		  	});
+	  	}
+	  	else{
+	  		// console.log("imp:","conditional markup of - ",  _el, " ::::====:::: ", eval(_el.getAttribute("render-if")));
+	    	if (!eval(_el.getAttribute("render-if"))) {
+	        	_el.style.display = "none";
+	      	}else{
+	      		_el.style.display = "block";
+	      	}
+	    }
+	}
+
+	__findAndReplaceUnequalNodes = (root1, root2)=>{ //not used currently
+  		var _this = this;
+
+        // console.log("imp:", "patchDom: comparing nodes - ", root1, root2);
+
+        if(root2.hasAttribute("render-if")){
+        	this.__processConditionalMarkup(root2);
+        }
+
+        if (root1.children.length == 0 || root2.children.length==0) {
+          // console.log("imp:", "patchDom: replacing node - ", root2, " with ", root1);
+          root2.replaceWith(root1);
+          return;
+        }
+
+        var nonComponentChildren = Array.from(root1.children).filter((_childNode)=>{
+        	return !_childNode.constructedFrom;
+        })
+
+        nonComponentChildren.forEach((_root1ChildNode, idx) => {
+          var _root2ChildNode = root2.children[idx];
+
+          if (!_root1ChildNode.isEqualNode(_root2ChildNode) && !_root2ChildNode.attributes.renderonlyonce && !_root2ChildNode.constructedFrom) {
+            // console.log("patchDom: checking nodes - ", _root2ChildNode);
+            	_this.__findAndReplaceUnequalNodes(_root1ChildNode, _root2ChildNode);
+          }
+        });
+    }
 
 
     __patchDOM() {
@@ -373,21 +433,46 @@ class DOMComponent extends HTMLElement {
 
     	try {
     		var _renderedFragRootNode = this._renderedFrag.firstElementChild; 
-	        if(cmp_dom_node.isEqualNode(_renderedFragRootNode)){return;}
+
+	        if(cmp_dom_node.isEqualNode(_renderedFragRootNode)){
+	        	return;
+	        }
+
+	        if(in_dom && in_dom.attributes.renderonlyonce) {
+		      	console.log("imp:", "Not patching dom - as renderonlyonce declared in rootNode");
+		        in_dom.dataset.state = this.current_state;
+		        // only patch style in this case
+		        var _indomStyle = in_dom.querySelector('style');
+		        var _renderedStyle = this._renderedFrag.querySelector('style');
+		        if(_renderedStyle && !_indomStyle.isEqualNode(_renderedStyle)){
+		        	_indomStyle.replaceWith(_renderedStyle);
+		        }
+		      	return;
+		    }
 
 	        if(_renderedFragRootNode.children.length==0){
 	        	cmp_dom_node.replaceWith(this._renderedFrag);
 	        	return;
 	        }
 
-	        if(cmp_dom_node.children.length == _renderedFragRootNode.children.length && in_dom){
-		        Array.from(_renderedFragRootNode.children).forEach((_renderedFragChild, idx)=>{
-		        	var cmpDOMFragChild = cmp_dom_node.children[idx];
-		        	if(!cmpDOMFragChild.isEqualNode(_renderedFragChild) && !cmpDOMFragChild.attributes.renderonlyonce){  //this would in its current state skip patching some changes like event listeners addded via javascript.
-		        		cmp_dom_node.replaceChild(_renderedFragChild, cmpDOMFragChild);	
-		        	}
-		        });
-		    }else{
+	        if (in_dom && cmp_dom_node.children.length == _renderedFragRootNode.children.length) {
+		        this.__findAndReplaceUnequalNodes(_renderedFragRootNode, cmp_dom_node);
+		        return;
+		    }
+
+	     	//    if(cmp_dom_node.children.length == _renderedFragRootNode.children.length && in_dom){
+	     	//    	// this.__findAndReplaceUnequalNodes(_renderedFragRootNode, cmp_dom_node);
+		    //     Array.from(_renderedFragRootNode.children).forEach((_renderedFragChild, idx) => {
+		    //       	var cmpDOMFragChild = cmp_dom_node.children[idx];
+			   //      if (!cmpDOMFragChild.isEqualNode(_renderedFragChild) && !cmpDOMFragChild.attributes.renderonlyonce && !cmpDOMFragChild.constructedFrom) {
+			   //          //this would in its current state skip patching some changes like event listeners addded via javascript.
+			   //          cmp_dom_node.replaceChild(_renderedFragChild, cmpDOMFragChild);
+			   //      }
+			   //  });
+		    // }
+
+		    else{
+		    	this.__processConditionalMarkup();
 	        	cmp_dom_node.replaceWith(this._renderedFrag);
 	      	}
     	}catch(e){
@@ -435,8 +520,6 @@ class DOMComponent extends HTMLElement {
 	    // this._processChildCmps();
 
 	    this.__processRootMarkup();
-
-	    this.__processConditionalMarkup();
 
 	    this.__processStyleMarkup();
 

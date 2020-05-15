@@ -35,6 +35,7 @@ class DataSource{   //returns null only if this.label is null
 	    this.comms = {
 	    	"init" : `${this.label}-datasrc-initialised`
 	    }
+	    this.eventTarget = new EventTarget();
 	    this.active = true;
 	    return this.__init__();
 	}
@@ -79,17 +80,39 @@ class DataSource{   //returns null only if this.label is null
 		}
 		var _this = this;
 		if(this.socket){
-			this.socket.socket.addEventListener("message", (msg) => {
-				_this._onmsg.call(_this, msg);
+			// this.socket.socket.addEventListener("message", (msg) => {
+			// 	_this._onmsg.call(_this, msg);
+			// });
+
+			this.socket.addListener(this.label, (msgEv) => {
+				_this._onmsg.call(_this, msgEv);
 			});
-			PostOffice.registerBroker(this, this.socketName, (msgEv) => {
-	          _this._onmsg.call(_this, msgEv);
-	        });
+
+			// PostOffice.registerBroker(this, this.socketName, (msgEv) => {
+	  //         _this._onmsg.call(_this, msgEv);
+	  //       });
 		}
 	}
 
 	_normalizeData(data) {
+		if (typeof this._cmp.schema == "object" && this._cmp.schema.hasOwnProperty("length")) {
+			return data; // when data is an array
+		}
 		return {...this._cmp.schema, ...data};
+	}
+
+	_disptachMessage(data) {
+		var ev = new CustomEvent( this.label,{
+			detail: data
+		})
+		this.eventTarget.dispatchEvent(ev);
+		PostOffice.broadcastMsg(this.label, data); //to currently allow for the registered borkers from other components 
+	}
+
+	_updateDatainContext(data) {
+		this.data = data;
+		this._log('imp:', 'updated data in context');
+		this._disptachMessage(this.data);
 	}
 
 	_checkLocalDBorFixtures(){
@@ -102,9 +125,8 @@ class DataSource{   //returns null only if this.label is null
 	        	}
 	  			return;
 	  		}
-			_this.data = value;
-            _this._log('imp:', 'got locally stored data');
-            PostOffice.broadcastMsg(_this.label, _this.data);
+	  		_this._log('imp:', 'got locally stored data');
+			_this._updateDatainContext(value);
         }).catch((err) => {
             _this._log('imp:', 'error checking locally stored data;', " _reason_: ", err, ";" );
             _this._loadFixtures(); 
@@ -152,9 +174,8 @@ class DataSource{   //returns null only if this.label is null
 		}
 		var data = this._normalizeData(_data)
 		localforage.setItem(this.label, data).then(function (value) {
-			_this.data = value;
-            _this._log('imp:', 'updated data');
-            PostOffice.broadcastMsg(_this.label, _this.data);
+            _this._log('imp:', 'updating data');
+            _this._updateDatainContext(value);
         }).catch(function(err) {
             _this._log('imp:','error updating data;', ' _reason_: ', err);
         });
@@ -189,18 +210,24 @@ class DataSource{   //returns null only if this.label is null
 	// }
 
 	_onmsg (msgEv) {
-		var _msgStr = msgEv.data;
-  		try{
-  			var _msg = JSON.parse(_msgStr);
-  		}catch(e){ //not valid msg
+		// var _msgStr = msgEv.data;
+  		// try{
+  		// 	var _msg = JSON.parse(_msgStr);
+  		// }catch(e){ //not valid msg
+  		// 	return;
+  		// }
+  		this._log("imp:", "received msg - ", msgEv);
+
+  		var _msg = msgEv.detail;
+
+  		if(!this._authenticateMsg(_msg)){
+  			this._log("imp:","msg authentication failed for - ", _msg);
   			return;
   		}
 
-  		if(!this._authenticateMsg(_msg)){return;}
-
   		// console.group(this._logPrefix);
   		
-  		this._log("imp:", "got msg - ");
+  		this._log("imp:", "got msg - ", JSON.stringify(_msg));
 
   		if(_msg.data){
   			console.dir(_msg.data);

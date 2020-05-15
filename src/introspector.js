@@ -1,7 +1,12 @@
-window.muffinDebugger = {};
-window.muffinDebugger.initPort = (msgEv) => {
-	muffinDebugger.port2 = msgEv.ports[0];
-	muffinDebugger.port2.onmessage = () => {
+var Introspector = {};
+Introspector.initPort = (msgEv) => {
+	if(MUFFIN_CONFIG.INTROSPECT!=true){return;}
+	Introspector.port2 = msgEv.ports[0];
+	if(!Introspector.port2){
+		return;
+	}
+	Introspector.port2.onmessage = () => {
+		if(MUFFIN_CONFIG.INTROSPECT!=true){return;}
 		var introspectObj = [];
 		DOMComponentRegistry.list().forEach((_entry)=>{
 			_entry.instances.forEach((instance)=>{
@@ -10,14 +15,18 @@ window.muffinDebugger.initPort = (msgEv) => {
 			});
 		});
 		console.log("imp:"," - DEBUGGER MSG - ", msgEv)
-    	muffinDebugger.port2.postMessage(introspectObj);
+    	Introspector.port2.postMessage(introspectObj);
     };
 }
-window.muffinDebugger.start = ()=> {
+Introspector.start = ()=> {
+	if(MUFFIN_CONFIG.INTROSPECT!=true){return;}
 	window.onmessage = function(msgEv){
 		console.log("imp:","initializing port", msgEv);
-		muffinDebugger.initPort(msgEv);
+		Introspector.initPort(msgEv);
 	}
 	console.log("imp:","STARTED MUFFIN DEBUGGER");
 }
-muffinDebugger.start();
+
+export {
+	Introspector
+}

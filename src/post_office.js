@@ -3,7 +3,7 @@ class PostOffice extends Object {
 	// constructor() {
 	// 	this.registry = [];
 	// }
-
+	static defaultScope = new EventTarget();
 
 	static addSocket(_constructor, name, _url) {
 		PostOffice.sockets[name] = new PostOffice.Socket(_constructor, name, _url);
@@ -22,7 +22,7 @@ class PostOffice extends Object {
 	}
 
 	static getDefaultScope (){
-		return window;
+		return PostOffice.defaultScope;
 	}
 
 	static _getBroker (label, scope) {
@@ -83,107 +83,158 @@ PostOffice.Socket = class PostOfficeSocket {
 	  this.name = name;
 	  this.url = url;
 	  this.socket = new _constructor(url);
+	  this.defaultScope = new EventTarget();
+	  this.listeners = [];
 	  this.__init__();
 	}
 
 	__init__() {
-	  // PostOffice.sockets[name] = new WebSocket(_url);
-	  // PostOffice.sockets[name].proxy = {};
-	  // this.socket.
+		var _this = this;
+		// PostOffice.sockets[name] = new WebSocket(_url);
+		// PostOffice.sockets[name].proxy = {};
+		// this.socket.
+		if(this.socket instanceof WebSocket){
+			this._keepAlive();
+		}
+
+	  	this.socket.addEventListener("message", (msgEv)=>{
+	  		_this._onMsg.call(_this, msgEv)
+	  	});
+	}
+
+	_keepAlive() {
+		var _this = this;
+		clearInterval(this.connectionKeepAlive);
+        this.connectionKeepAlive = setInterval(()=>{
+        	if(_this.keepAlive != true){return;}
+            _this.send("ping");
+        },59000);
+	}
+
+	onmessage(socketMsgEv) { //custom onmessage functions can be provided by the developer.
+		console.log("imp:", socketMsgEv);
+		var _msgStr = socketMsgEv.data;
+		if(_msgStr=="response:"){return;} //ping-pong messages exchanged in keepAlive
+		var ev = null;
+		try{
+  			var _msg = JSON.parse(_msgStr);
+	  		ev = new CustomEvent(_msg.label, {
+				detail: _msg
+			});
+  		}catch(e){ //not valid msg
+  			var _msg = {error: e, label: `${this.name}-message-error`}
+  			ev = new CustomEvent(_msg.label, {
+  				detail: _msg
+  			});
+  		}
+  		return ev;
+	}
+
+	_onMsg(socketMsgEv) {
+		var msgEv = this.onmessage(socketMsgEv);
+		if(msgEv){
+			this.dispatchMessage(msgEv);
+		}
 	}
 
 	send(msg) {
-		this.socket.send(msg)
+		this.socket.send(msg);
+	}
+
+	dispatchMessage(msgEv) {
+		this.defaultScope.dispatchEvent(msgEv);
+		console.log("imp:","PostOfficeSocket: ", this.name, " - dispatched message = ", msgEv);
+	}
+
+	addListener(label, cb) {
+		this.defaultScope.addEventListener(label,cb);
+		this.listeners.push({label:label,cb:cb});
 	}
 }
 
 PostOffice.Broker = class PostOfficeBroker {
-							constructor(_label, _cb, _scope) {
-								this.label = _label;
-								this.scope = _scope;
-								this.callbacks = [];
-								this.addCallback(_cb);
-							}
+	constructor(_label, _cb, _scope) {
+		this.label = _label;
+		this.scope = _scope;
+		this.callbacks = [];
+		this.addCallback(_cb);
+	}
 
-							_getScope() {
-								return document.querySelector(this.scope) || PostOffice.getDefaultScope();
-							}
+	_getScope() {
+		return document.querySelector(this.scope) || PostOffice.getDefaultScope();
+	}
 
-							addCallback (_cb) {
-								var _this = this;
-								this.callbacks.push(_cb);
-								// (this._getScope()).addEventListener(_this.label, _this.execute);
-							}
+	addCallback (_cb) {
+		var _this = this;
+		this.callbacks.push(_cb);
+		// (this._getScope()).addEventListener(_this.label, _this.execute);
+	}
 
-							execute (msg) {
-								this.callbacks.forEach((_cb, idx)=>{
-									console.log("PostOffice.Broker executing callback - ", idx);
-									try{  //to prevent an error causing cb block execution of other cbs
-										_cb(msg);
-									}catch(e){
-										console.log("PostOffice.Broker error executing callback - ", idx);
-										return;
-									}
-									console.log("PostOffice.Broker successfully executed callback - ", idx);
-								});
-							}
-					}
+	execute (msg) {
+		this.callbacks.forEach((_cb, idx)=>{
+			console.log("PostOffice.Broker executing callback - ", idx);
+			try{  //to prevent an error causing cb block execution of other cbs
+				_cb(msg);
+			}catch(e){
+				console.log("PostOffice.Broker error executing callback - ", idx);
+				return;
+			}
+			console.log("PostOffice.Broker successfully executed callback - ", idx);
+		});
+	}
+}
 
 
 PostOffice.Message = class PostOfficeMessage {
 
-					    static schema = {};
+    static schema = {};
 
-					    constructor(msg) {
-					        this.msg = {...this.constructor.schema,...msg}
-					    }
+    constructor(msg) {
+        this.msg = {...this.constructor.schema,...msg}
+    }
 
-					    shout() {
-					        console.log("Message shouted");
-					    }
+    hasKey(key) {
+        var _this = this;
+        var keyList = key.split(".");
+        if(keyList.length == 1){
+            return key in this.msg;
+        }
 
-					    hasKey(key) {
-					        var _this = this;
-					        var keyList = key.split(".");
-					        if(keyList.length == 1){
-					            return key in this.msg;
-					        }
+        var _msg = this.msg;
+        var keyIdx = 0;
 
-					        var _msg = this.msg;
-					        var keyIdx = 0;
+        var result = true;  //need to figure out a proper way for this initial value to be false (currently insecure)
+        while (keyIdx < keyList.length) {
+            var _keyToTest = keyList[keyIdx];
+            if(_keyToTest in _msg) {
+                _msg = _msg[_keyToTest];
+                i+=1;
+                continue;
+            }
+            result = false;
+            break;
+        }
+        return result;
+    }
 
-					        var result = true;  //need to figure out a proper way for this initial value to be false (currently insecure)
-					        while (keyIdx < keyList.length) {
-					            var _keyToTest = keyList[keyIdx];
-					            if(_keyToTest in _msg) {
-					                _msg = _msg[_keyToTest];
-					                i+=1;
-					                continue;
-					            }
-					            result = false;
-					            break;
-					        }
-					        return result;
-					    }
+    hasKeys() {
+        var _this = this;
+        var result = true;  //need to figure out a proper way for this initial value to be false (currently insecure)
+        Array.from(arguments).forEach((key)=>{
+            if(!_this.hasKey(key)){valid=false};
+        });
+        return result;
+    }
 
-					    hasKeys() {
-					        var _this = this;
-					        var result = true;  //need to figure out a proper way for this initial value to be false (currently insecure)
-					        Array.from(arguments).forEach((key)=>{
-					            if(!_this.hasKey(key)){valid=false};
-					        });
-					        return result;
-					    }
+    update(msg) {
+        this.msg = {...this.msg,...msg}
+        return this;
+    }
 
-					    update(msg) {
-					        this.msg = {...this.msg,...msg}
-					        return this;
-					    }
-
-					    stringify() {
-					      return JSON.stringify(this.msg);
-					    }
-					}
+    stringify() {
+      return JSON.stringify(this.msg);
+    }
+}
 
 
 export {
