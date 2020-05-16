@@ -392,7 +392,31 @@ class DOMComponent extends HTMLElement {
 	    }
 	}
 
-	__findAndReplaceUnequalNodes = (root1, root2)=>{ //not used currently
+	__isDOMTreeEqual(node1, node2) { //light check - only 1st depth
+
+	  	if(node1.childElementCount != node2.childElementCount) {
+	  		return false;
+	  	}
+
+	  	var isEqual = true;
+	  	for(var idx in Array.from(node1.children)){
+	  		// if(node1.constructedFrom.debugPatchDom){
+	  		// 	console.log("imp:", "checking children __isDOMTreeInequal between - ", node1.children[idx], " & ", node2.children[idx]);
+	  		// }
+	  		var childNode1 = node1.children[idx];
+	  		var childNode2 = node2.children[idx];
+	  		if(childNode1.constructedFrom || childNode2.constructedFrom){
+	  			continue;
+	  		}
+	  		if(childNode1.childElementCount != childNode2.childElementCount){
+	  			isEqual = false;
+	  			break;
+	  		}
+	  	}
+	  	return isEqual;
+	  }
+
+	async __findAndReplaceUnequalNodes (root1, root2) { //not used currently
   		var _this = this;
 
         // console.log("imp:", "patchDom: comparing nodes - ", root1, root2);
@@ -400,27 +424,59 @@ class DOMComponent extends HTMLElement {
         if(root2.hasAttribute("render-if")){
         	this.__processConditionalMarkup(root2);
         }
+        // if(root2.constructedFrom && root2.constructedFrom.domElName != this.domElName){
+        // 	return;
+        // }
 
-        if (root1.children.length == 0 || root2.children.length==0) {
+        if ((root1.children.length == 0 || root2.children.length == 0)) {
           // console.log("imp:", "patchDom: replacing node - ", root2, " with ", root1);
           root2.replaceWith(root1);
           return;
         }
 
-        var nonComponentChildren = Array.from(root1.children).filter((_childNode)=>{
-        	return !_childNode.constructedFrom;
-        })
+        Array.from(root1.children).forEach((_root1ChildNode, idx) => {
+          	var _root2ChildNode = root2.children[idx];
 
-        nonComponentChildren.forEach((_root1ChildNode, idx) => {
-          var _root2ChildNode = root2.children[idx];
+          	if (_root1ChildNode.isEqualNode(_root2ChildNode)) {
+            	return; //don't render in this case
+          	}
+          	if(_root2ChildNode.attributes.renderonlyonce){
+          		return;
+          	}
+          	if(_root2ChildNode.hasOwnProperty("constructedFrom")){
+          		return;
+          	}
+          	// _this.__findAndReplaceUnequalNodes(_root1ChildNode, _root2ChildNode);
 
-          if (!_root1ChildNode.isEqualNode(_root2ChildNode) && !_root2ChildNode.attributes.renderonlyonce && !_root2ChildNode.constructedFrom) {
-            // console.log("patchDom: checking nodes - ", _root2ChildNode);
-            	_this.__findAndReplaceUnequalNodes(_root1ChildNode, _root2ChildNode);
-          }
+   			if(!this.__isDOMTreeEqual(_root1ChildNode, _root2ChildNode)) {
+				_root2ChildNode.replaceWith(_root1ChildNode);
+			}else{
+				_this.__findAndReplaceUnequalNodes(_root1ChildNode, _root2ChildNode);
+			}
+          	// if(_root2ChildNode.hasOwnProperty("constructedFrom")){return;}
         });
     }
 
+
+    __patchRootNodeAttrs(rootNode) {
+        console.log("imp:", "Not patching dom - as renderonlyonce declared in rootNode");
+        rootNode.dataset.state = this.current_state;
+	  }
+
+	__patchStyle(rootNode) {
+	  	var _indomStyle = rootNode.querySelector('style');
+
+        var _renderedStyle = this._renderedFrag.querySelector('style');
+
+        if (_renderedStyle && !_indomStyle.isEqualNode(_renderedStyle)) {
+          _indomStyle.replaceWith(_renderedStyle);
+        }
+	}
+
+	__patchDOMCompletely(cmp_dom_node) {
+		this.__processConditionalMarkup();
+	    cmp_dom_node.replaceWith(this._renderedFrag);
+	}
 
     __patchDOM() {
     	if(this.attributes.stop){
@@ -437,70 +493,27 @@ class DOMComponent extends HTMLElement {
 	        if(cmp_dom_node.isEqualNode(_renderedFragRootNode)){
 	        	return;
 	        }
+	        if(in_dom){
+	        	if(cmp_dom_node.attributes.renderonlyonce){
+	        		this.__patchStyle(cmp_dom_node);
+		      		this.__patchRootNodeAttrs(cmp_dom_node);
+		      		return;
+	        	}
 
-	        if(in_dom && in_dom.attributes.renderonlyonce) {
-		      	console.log("imp:", "Not patching dom - as renderonlyonce declared in rootNode");
-		        in_dom.dataset.state = this.current_state;
-		        // only patch style in this case
-		        var _indomStyle = in_dom.querySelector('style');
-		        var _renderedStyle = this._renderedFrag.querySelector('style');
-		        if(_renderedStyle && !_indomStyle.isEqualNode(_renderedStyle)){
-		        	_indomStyle.replaceWith(_renderedStyle);
-		        }
-		      	return;
+		      	if(this.__isDOMTreeEqual(cmp_dom_node, _renderedFragRootNode)){
+		      		this.__findAndReplaceUnequalNodes(_renderedFragRootNode, cmp_dom_node);	
+		      	}else{
+		      		this.__patchDOMCompletely(cmp_dom_node);
+		      	}
 		    }
-
-	        if(_renderedFragRootNode.children.length==0){
-	        	cmp_dom_node.replaceWith(this._renderedFrag);
-	        	return;
-	        }
-
-	        if (in_dom && cmp_dom_node.children.length == _renderedFragRootNode.children.length) {
-		        this.__findAndReplaceUnequalNodes(_renderedFragRootNode, cmp_dom_node);
-		        return;
-		    }
-
-	     	//    if(cmp_dom_node.children.length == _renderedFragRootNode.children.length && in_dom){
-	     	//    	// this.__findAndReplaceUnequalNodes(_renderedFragRootNode, cmp_dom_node);
-		    //     Array.from(_renderedFragRootNode.children).forEach((_renderedFragChild, idx) => {
-		    //       	var cmpDOMFragChild = cmp_dom_node.children[idx];
-			   //      if (!cmpDOMFragChild.isEqualNode(_renderedFragChild) && !cmpDOMFragChild.attributes.renderonlyonce && !cmpDOMFragChild.constructedFrom) {
-			   //          //this would in its current state skip patching some changes like event listeners addded via javascript.
-			   //          cmp_dom_node.replaceChild(_renderedFragChild, cmpDOMFragChild);
-			   //      }
-			   //  });
-		    // }
-
-		    else{
-		    	this.__processConditionalMarkup();
-	        	cmp_dom_node.replaceWith(this._renderedFrag);
+		    else{ 
+		    	this.__patchDOMCompletely(cmp_dom_node);
 	      	}
     	}catch(e){
     		this._log("imp:","(ERROR) - component rendering failed with the following error - \n", e);
     	}
-
-    	// try{
-    	// 	var _renderedFragRootNode = this._renderedFrag.firstElementChild; 
-	    //     // cmp_dom_node.outerHTML = _rendered;
-	    //     if(cmp_dom_node.isEqualNode(_renderedFragRootNode)){return;}
-
-	    //     // console.log("imp:", cmp_dom_node.children.length, " ?==? ", this._renderedFrag.firstElementChild.children.length);
-
-	    //     if(cmp_dom_node.children.length == _renderedFragRootNode.children.length && this._getDomNode()){
-		   //      Array.from(_renderedFragRootNode.children).forEach((_renderedFragChild, idx)=>{
-		   //      	var cmpDOMFragChild = cmp_dom_node.children[idx];
-		   //      	if(!cmpDOMFragChild.isEqualNode(_renderedFragChild)){  //this would in its current state skip patching some changes like event listeners addded via javascript.
-		   //      		cmp_dom_node.replaceChild(_renderedFragChild, cmpDOMFragChild);	
-		   //      	}
-		   //      });
-		   //  }else{
-	    //     	cmp_dom_node.replaceWith(this._renderedFrag);
-	    //   	}
-	    //   	// this._log("imp:","cmpdomnode = ", cmp_dom_node);
-	    // }catch(e){
-	    //   this._log("imp:","(ERROR) - component rendering failed with the following error - \n", e);
-	    // }
     }
+
 
   	render() { //called from either - 1.) datasrcupdate, 2.) datasrc is null after init, 3.) onattributechange, 4.) stateChange
 	    this._log("----------rendering component start---------------");
