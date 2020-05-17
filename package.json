@@ -4,7 +4,7 @@
   "description": "lightweight & implementation-flexible spa frontend development framework",
   "main": "index.js",
   "bin": {
-    "muffin": "./cli/muf.js"
+    "muf": "./cli/muf.js"
   },
   "devDependencies": {
     "@babel/cli": "^7.1.2",

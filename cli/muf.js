@@ -1,15 +1,18 @@
 #!/usr/bin/env node
 const readline = require("readline");
-const { execSync } = require("child_process");
+const { spawnSync, execSync } = require("child_process");
 
 const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout
-});
+})
+.on('SIGINT', () => process.emit('SIGINT'))
+.on('SIGTERM', () => process.emit('SIGTERM'));
+
 const { program } = require('commander');
 
-const { initApp } = require('./init.js');
-var { createComponent } = require("./create_component.js");
+const { initApp } = require('./initApp.js');
+var { initComponent } = require("./initComponent.js");
 
 
 program
@@ -17,47 +20,49 @@ program
   .option('-i, --init', 'initialise app')
   .option('-a, --add', 'add new component');
 
+ if (process.argv.length <= 2) {
+ 	program.help();
+ };
+
 program.parse(process.argv);
 
+// console.log("program = ", program);
+
+// if (program.args.length === 0) {
+//   program.help();
+// }
 
 var runCmd = (cmd, logMsg) => {
 	if(!logMsg) { console.log("running: ", cmd); }
 	else { console.log(logMsg); }
-	execSync(cmd, (error, stdout, stderr) => {
-	    if (error) {
-	        console.log(`error: ${error.message}`);
-	        return;
-	    }
-	    if (stderr) {
-	        console.log(`stderr: ${stderr}`);
-	        return;
-	    }
-	    console.log(`stdout: ${stdout}`);
-	});
+	var running = execSync(cmd, {stdio: 'inherit', shell: '/bin/bash'});
+	return "Finish";
 }
 
 
-var App = {
+var AppConfig = {
 	"head": {
 		title: "muffin-example-001",
-		description: "muffin example app 001",
+		description: "muffin hello world",
 		themeColor: "#312450",
 		keywords: []
 	}
 }
 
 var init = () => {
-	rl.question("title of the webpage (to be put in webpage <head>)? ", (title) => {
-		App.head.title = title || App.head.title;
-	    rl.question("description (to be put in webpage <head>) ? ", (description) => {
-	    	App.head.description = description || App.head.description;
-	    	rl.question("theme color (to be put in webpage <head> meta) ? ", (themeColor) => {
-	    		App.head.themeColor = themeColor || App.head.themeColor;
-	    		console.log("initialised muffin app - ", App.head.title);
-	    		initApp(App);
+	rl.question(`title of the webpage (to be put in webpage <head>)? (default: ${AppConfig.head.title}) `, (title) => {
+		AppConfig.head.title = title || AppConfig.head.title;
+	    rl.question(`description (to be put in webpage <head>) ? (default: ${AppConfig.head.description}) `, (description) => {
+	    	AppConfig.head.description = description || AppConfig.head.description;
+	    	rl.question(`theme color (to be put in webpage <head> meta) ? (default: ${AppConfig.head.themeColor}) `, (themeColor) => {
+	    		AppConfig.head.themeColor = themeColor || AppConfig.head.themeColor;
+	    		console.log("Initialised Muffin App - ", AppConfig.head.title);
+	    		initApp(AppConfig);
 	    		runCmd("npm install");
-				runCmd("npm run build");
-				runCmd("python -m SimpleHTTPServer 8000", "app running on http://localhost:8000");
+				// runCmd("npm run build");
+				runCmd("npm run dev");
+				// rl.close();
+				// runCmd("python -m SimpleHTTPServer 8000", "app running on http://localhost:8000");
 	    	});
 	    });
 	});
@@ -82,7 +87,7 @@ var addNewComponent = () => {
 	    	rl.question("markupFunc of the component ? ", (cmp_markupFunc) => {
 	    		Cmp.markupFunc = cmp_markupFunc || Cmp.markupFunc;
 	    		console.log("initialised muffin app - ", Cmp.name);
-	    		createComponent(Cmp);
+	    		initComponent(Cmp);
 	    		rl.close();
 	    	});
 	    });
@@ -93,16 +98,28 @@ var addNewComponent = () => {
 	});
 } 
 
+
+process.on('exit', function() {
+	console.log('process killing');
+	// console.log('killing', children.length, 'child processes');
+	// children.forEach(function(child) {
+	// 	child.kill();
+	// });
+});
+
+process.on('close', function() {
+  console.log('process closing');
+  // children.forEach(function(child) {
+  //   child.kill();
+  // });
+});
+
 if (program.debug) console.log(program.opts());
 if (program.init) {
-	console.log('initialising muffin app - ', program.init);
+	console.log('initialising muffin app...');
 	init();
 };
 if (program.add) {
 	console.log('adding new component...');
 	addNewComponent();
 }
-
-
-
-

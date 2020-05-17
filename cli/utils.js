@@ -9,7 +9,7 @@ var generateMarkup = (_filename, markupFunc, opt) => {
 		// console.log("generated markup for ", _filename, " with data: \n\n", opt, "\n\n\n");
 		return markup;
 	}catch(err){
-		console.log(err);
+		console.error(err);
 	}
 }
 
