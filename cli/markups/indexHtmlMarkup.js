@@ -13,18 +13,19 @@ return `<!DOCTYPE HTML>
 	    <meta http-equiv="ScreenOrientation" content="autoRotate:disabled">
 	    <meta name="theme-color" content="${_data.head.themeColor}" />
 
-	    <meta property="og:image" content="./assets/imgs/logo_2.1.png">
-	    <meta name="twitter:image" content="./assets/imgs/logo_2.1.png">
-	    <meta name="twitter:card" content="./assets/imgs/logo_2.1.png">
-	    <link rel="icon" href="./assets/imgs/logo_2.1.png" type="image/gif" />
+	    <meta property="og:image" content="./assets/imgs/muffin.js.png">
+	    <meta name="twitter:image" content="./assets/imgs/muffin.js.png">
+	    <meta name="twitter:card" content="./assets/imgs/muffin.js.png">
+	    <link rel="icon" href="./assets/imgs/muffin.js.png" type="image/gif" />
 
+	    <link inline rel="stylesheet" href="/assets/css/dist/app.min.css" />
 	    <script inline src="/node_modules/muffin/dist/muffin.min.js"></script>
 	</head>
 
-	<body>
-	    <div class="surface" route="contact-page">
-	         <hello-world></hello-world>
-	    </div>
+	<body class="grey lighten-4">
+		<div class="site-wrapper">
+		    <hello-world></hello-world>
+		</div>
 	    <script inline src="./assets/js/dist/app.min.js"></script>
 	</body>
 </html>`

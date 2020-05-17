@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
-var fs = require("fs");
+const fs = require("fs");
+const path = require('path'); 
 
 var { babelrcMarkup } = require("./markups/babelrcMarkup.js");
 var { gitignoreMarkup } = require("./markups/gitignoreMarkup.js");
@@ -16,9 +17,11 @@ var { generateMarkup } = require("./utils.js");
 var { initComponent } = require("./initComponent.js");
 
 
+
+
 var createProjectFiles = (opt) => {
 	console.log("creating project files");
-	var _files = {
+	var markup_files = {
 					"index.src.html": indexHTMLMarkup,
 					"gulpfile.js": gulpfileMarkup,
 					"package.json": packagejsonMarkup,
@@ -28,12 +31,22 @@ var createProjectFiles = (opt) => {
 					"run.js": runserverMarkup,
 					"components/index.js": componentIndexMarkup
 				};
-	for(var _filename in _files){
-		fs.writeFileSync(_filename, generateMarkup(_filename, _files[_filename], opt), function (err) {
+
+	var static_files = ["./static_files/css/base.css","./static_files/css/colors.css","./static_files/imgs/muffin.js.png"]
+
+	for(var _filename in markup_files){
+		fs.writeFileSync(_filename, generateMarkup(_filename, markup_files[_filename], opt), function (err) {
 		  if (err) {console.log(err);}
-		  console.log(_filename, ' file created successfully');
 		});
 	}
+
+	static_files.forEach((_filename)=>{
+		console.log("copying: ", path.join(__dirname,_filename), ", to: ", _filename.replace("static_files","assets"));
+		fs.copyFile(path.join(__dirname,_filename), _filename.replace("static_files","assets"), (err) => {
+		  if (err) throw err;
+		  console.log('source.txt was copied to destination.txt');
+		});
+	});
 }
 
 var createProjectFolders = (opt) => {

@@ -1,0 +1,399 @@
+::-webkit-scrollbar {
+  /*width: 4px;
+  height: 4px;*/
+  width: 0.25rem;
+  height: 0.25rem;
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+  background: #f1f1f1; 
+}
+ 
+/* Handle */
+::-webkit-scrollbar-thumb {
+  background: #888; 
+}
+
+/* Handle on hover */
+::-webkit-scrollbar-thumb:hover {
+  background: #555; 
+}
+
+
+/*@font-face {
+    font-family: 'opensans';
+    src: url(/assets/fonts/opensans/OpenSans-Regular.ttf);
+}
+
+
+@font-face {
+    font-family: 'opensans-light';
+    src: url(/assets/fonts/opensans/OpenSans-Light.ttf);
+}
+
+
+p,text,span {
+    font-family: opensans-light;
+}
+
+h1, h2, h3, h4, h5 {
+    font-family: opensans;
+}*/
+
+html, 
+body {
+    height: 100%;
+    width: 100%;
+}
+
+body{
+    padding: 0;
+    margin: 0;
+}
+
+.site-wrapper {
+    width: 100%;
+    height: 100%; 
+}
+
+@media (max-width: 767px) { 
+    .site-wrapper {
+        overflow-x: hidden;
+    }
+}
+
+@media (min-width: 767px) { 
+    body {
+        overflow-x: hidden;
+    }
+}
+
+a {
+  cursor: pointer;
+}
+
+.well {
+  margin: 0;
+}
+
+/*.m0 {margin: 0;}
+.m5 {margin: 5px !important;}
+.m10 {margin: 10px !important;}
+.m20 {margin: 20px !important;}
+
+.mt0 { margin-top: 0px; }
+.mt5 { margin-top: 5px; }
+.mt7 { margin-top: 7px; }
+.mt10 { margin-top: 10px; }
+.mt15 { margin-top: 15px; }
+.mt20 { margin-top: 20px; }
+.mt30 { margin-top: 30px !important; }
+.mt50 { margin-top: 50px !important; }
+
+.ml5 { margin-left: 5px; }
+.ml10 { margin-left: 10px; }
+.ml15 {margin-left: 15px; }
+.ml20 { margin-left: 20px; }
+
+.mr5 { margin-right: 5px; }
+.mr10 { margin-right: 10px; }
+.mr20 { margin-right: 20px; }
+
+.mb0 { margin-bottom: 0px; }
+.mb5 { margin-bottom: 5px; }
+.mb7 { margin-bottom: 7px; }
+.mb15 { margin-bottom: 15px; }
+.mb20 { margin-bottom: 20px; }
+.mb30 { margin-bottom: 30px; }
+
+.p0 { padding: 0px; }
+.pb0 { padding-bottom: 0px; }
+.pr0 { padding-right: 0px; }
+.pl0 { padding-left: 0px; }
+.pl30 { padding-left: 30px; }
+.p5 { padding: 5px; }
+.p10 { padding: 10px; }
+.p15 { padding: 15px; }
+.p20 { padding: 20px; }
+.p25 { padding: 25px; }
+.pt10 { padding-top: 10px; }
+.pt20 { padding-top: 20px; }
+.pt30 { padding-top: 30px; }
+.pb10 { padding-bottom: 10px; }
+.pl5 { padding-left: 5px; }
+.pl10 { padding-left: 10px; }
+.pb20 { padding-bottom: 20px; }
+.pl20 { padding-left: 20px; }
+.pl40 { padding-left: 40px; }
+.pr20 { padding-right: 20px; }
+.pr40 { padding-right: 40px; }*/
+
+.m0 {margin: 0;}
+.m5 {margin: 0.313rem !important;}
+.m10 {margin: 0.625rem !important;}
+.m20 {margin: 1.25rem !important;}
+
+.mt0 { margin-top: 0; }
+.mt5 { margin-top: 0.313rem; }
+.mt7 { margin-top: 0.438rem; }
+.mt10 { margin-top: 0.625rem; }
+.mt15 { margin-top: 0.938rem; }
+.mt20 { margin-top: 1.25em; }
+.mt30 { margin-top: 1.875rem !important; }
+.mt50 { margin-top: 3.125rem !important; }
+
+.ml5 { margin-left: 0.313rem; }
+.ml10 { margin-left: 0.625rem; }
+.ml15 {margin-left: 0.938rem; }
+.ml20 { margin-left: 1.25rem; }
+
+.mr5 { margin-right: 0.313rem; }
+.mr10 { margin-right: 0.625rem; }
+.mr20 { margin-right: 1.25rem; }
+
+.mb0 { margin-bottom: 0; }
+.mb5 { margin-bottom: 0.313rem; }
+.mb7 { margin-bottom: 0.438rem; }
+.mb15 { margin-bottom: 0.938rem; }
+.mb20 { margin-bottom: 1.25rem; }
+.mb30 { margin-bottom: 1.875rem; }
+
+.p0 { padding: 0; }
+.pb0 { padding-bottom: 0; }
+.pr0 { padding-right: 0; }
+.pl0 { padding-left: 0; }
+.pl30 { padding-left: 1.875rem; }
+.p5 { padding: 0.313rem; }
+.p10 { padding: 0.625rem; }
+.p15 { padding: 0.938rem; }
+.p20 { padding: 1.25rem; }
+.p25 { padding: 1.563rem; }
+.pt10 { padding-top: 0.625rem; }
+.pt20 { padding-top: 1.25rem; }
+.pt30 { padding-top: 1.875rem; }
+.pb10 { padding-bottom: 0.625rem; }
+.pl5 { padding-left: 0.313rem; }
+.pl10 { padding-left: 0.625rem; }
+.pb20 { padding-bottom: 1.25rem; }
+.pl20 { padding-left: 1.25rem; }
+.pl40 { padding-left: 2.5rem; }
+.pr20 { padding-right: 1.25rem; }
+.pr40 { padding-right: 2.5rem; }
+.center-align { text-align: center; }
+.right-align { text-align: right; }
+.pull-left { float: left; }
+.pull-right { float: right; }
+
+
+.tx-bold { font-weight: bold; }
+
+.lh1-2 {
+    line-height: 1.2em !important;
+}
+
+.center {
+    text-align: center;
+}
+.left {
+    text-align: left;
+}
+.right {
+    text-align: right;
+}
+
+@media (max-width: 767px) { 
+    .sm-h100 {
+        height: 100%;
+    }
+    .sm-w100 {
+        width: 100%;
+    }
+
+    .sm-center {
+        text-align: center; 
+    }
+    .sm-left {
+        text-align: left; 
+    }
+    .sm-right {
+        text-align: right; 
+    }
+    .sm-float-left {
+    float: left;
+    }
+    .sm-float-center {
+        margin: 0 auto;
+    }
+    .sm-float-right {
+        float: right;
+    }
+    .sm-align-vertical-center {
+      position: relative;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+    /*.tx-sm { font-size: 10px !important; }
+    .tx-sm2 { font-size: 12px !important; }
+    .tx-md { font-size: 14px !important; }
+    .tx-lg { font-size: 17px; }
+    .tx-xl { font-size: 21px; }
+    .tx-xxl { font-size: 27px; }
+    .tx-xxxl { font-size: 36px; }
+    .tx-xxxxl { font-size: 59px; }*/
+
+    .tx-sm { font-size: 0.625rem !important; }
+    .tx-sm2 { font-size: 0.75rem !important; }
+    .tx-md { font-size: 0.875rem !important; }
+    .tx-lg { font-size: 1.063em; }
+    .tx-xl { font-size: 1.313rem; }
+    .tx-xxl { font-size: 1.688rem; }
+    .tx-xxxl { font-size: 2.25rem; }
+    .tx-xxxxl { font-size: 3.688rem; }
+}
+
+@media (min-width: 767px) { 
+    .md-h100 {
+        height: 100%;
+    }
+    .md-w100 {
+        height: 100%;
+    }
+
+    .md-center {
+        text-align: center; 
+    }
+    .md-left {
+        text-align: left; 
+    }
+    .md-right {
+        text-align: right; 
+    }
+    .md-float-left {
+    float: left;
+    }
+    .md-float-center {
+        margin: 0 auto;
+    }
+    .md-float-right {
+        float: right;
+    }
+    .md-align-vertical-center {
+      position: relative;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+    /*.tx-sm { font-size: 12px !important; }
+    .tx-sm2 { font-size: 14px !important; }
+    .tx-md { font-size: 19px !important; }
+    .tx-lg { font-size: 22px; }
+    .tx-xl { font-size: 25px; }
+    .tx-xxl { font-size: 32px; }
+    .tx-xxxl { font-size: 45px; }
+    .tx-xxxxl { font-size: 77px; }*/
+
+    .tx-sm { font-size: 0.75rem !important; }
+    .tx-sm2 { font-size: 0.875rem !important; }
+    .tx-md { font-size: 1.188rem !important; }
+    .tx-lg { font-size: 1.375rem; }
+    .tx-xl { font-size: 1.563rem; }
+    .tx-xxl { font-size: 2rem; }
+    .tx-xxxl { font-size: 2.813rem; }
+    .tx-xxxxl { font-size: 4.813rem; }
+}
+
+
+
+.align-vertical-center {
+  position: relative;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.float-left {
+    float: left;
+}
+.float-center {
+    margin: 0 auto;
+}
+.float-right {
+    float: right;
+}
+
+
+.h100 {
+    height: 100%;
+}
+.w100 {
+    width: 100%;
+}
+
+
+.ts100 {
+    transition: all 100ms ease-in;
+}
+.ts250 {
+    transition: all 250ms ease-in;
+}
+.ts500 {
+    transition: all 500ms ease-in;
+}
+.ts750 {
+    transition: all 750ms ease-in;
+}
+.ts1000 {
+    transition: all 1000ms ease-in;
+}
+.ts1500 {
+    transition: all 1500ms ease-in;
+}
+
+
+.surface {
+    width: 100%;
+    height: 100%;
+    margin: 0 !important;
+    transition: all 300ms linear;
+    transform: translate3d(100vw,0,0); /*defualt _slide-in-top (check style below)*/
+    z-index: -1;
+    opacity: 0;
+    position: absolute;
+}
+
+.surface._active {
+    transform: translate3d(0,0,0) !important;
+    z-index: 99 !important;
+    top: 0 !important;
+    left: 0 !important;
+    opacity: 1 !important;
+}
+
+
+.surface.busy-loader {
+    opacity: 0;
+    transform: translate3d(0,0,0);
+}
+
+.surface.busy-loader._active {
+    opacity: 1;
+}
+
+
+.surface._fade-in {
+    transform: translate3d(0,0,0);
+}
+.surface._slide-in-right {
+    transform: translate3d(100vw,0,0);
+}
+.surface._slide-in-left {
+    transform: translate3d(-100vw,0,0);
+}
+.surface._slide-in-top {
+    transform: translate3d(0,-100vh,0);
+}
+.surface._slide-in-bottom {
+    transform: translate3d(0,100vh,0);
+}
+.surface._slide-in-bottom-right {
+    transform: translate3d(100vw,100vh,0);
+}

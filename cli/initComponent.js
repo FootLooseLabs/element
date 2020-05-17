@@ -7,7 +7,7 @@ var defaultCmpOpt = {
 					markupFunc: (_data, uid, uiVars, _constructor) => { 
 						return `<div class="w100 h100">
 									<div class="align-vertical-center center">
-										<h3 class="tx-xxl">Muffin.js : Hello There.</h3>
+										<h3 class="tx-xxl m0">Muffin.js : Hello There.</h3>
 									</div>
 								</div>`
 					}
