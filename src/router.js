@@ -184,7 +184,7 @@ Router.prototype.toggleRouteEl = function(routeObj){
 Router.prototype._onload = function(target_route, target_page){
 	window.scrollTo(0,0);
 	if(target_route.onload){
-		target_route.onload.call(this, target_page);
+		target_route.onload.call(this, target_page, target_route);
 	}
 }
 
@@ -209,7 +209,7 @@ Router.prototype.updateState = function(routeObj){
 
 	if(routeObj.params){
 		for(var key in routeObj.params){
-			routeObj.url += ( "?" + String(key) + "=" + String(route.params[key]) );
+			routeObj.url += ( "?" + String(key) + "=" + String(routeObj.params[key]) );
 		}
 	}
 
@@ -254,10 +254,17 @@ Router.prototype.getRouteAncesstors = function(route_name){
 	return {elems: ancesstorRouteElems, routes: ancesstorRoutes};
 }
 
+Router.prototype.updateRouteObjParams = function (routeObj, url_params) {
+	if(routeObj.params){
+	  	routeObj.params = {...routeObj.params, ...url_params};
+	}
+}
+
 Router.prototype.go = function(route_name, url_params){
 	var routeEl = this.getRouteEl(route_name);
 	if(!routeEl){return;}
 	var routeObj = this.getOrCreateRoute(route_name, url_params);
+	this.updateRouteObjParams(routeObj, url_params);
 	this.updateState(routeObj);
 	this._log("imp:","changing route to - ", routeObj.name);
 	this.triggerCustomEvent(window,'stateChange',{ state: routeObj } );
