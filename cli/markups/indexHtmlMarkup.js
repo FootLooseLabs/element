@@ -18,15 +18,15 @@ return `<!DOCTYPE HTML>
 	    <meta name="twitter:card" content="./assets/imgs/muffin.js.png">
 	    <link rel="icon" href="./assets/imgs/muffin.js.png" type="image/gif" />
 
-	    <link inline rel="stylesheet" href="/assets/css/dist/app.min.css" />
-	    <script inline src="/node_modules/muffin/dist/muffin.min.js"></script>
+	    <link inline-src rel="stylesheet" href="/styles/app.min.css" />
+	    <script inline-src src="../node_modules/muffin/dist/muffin.min.js"></script>
+	    <script inline-src src="./scripts/app.min.js"></script>
 	</head>
 
 	<body class="grey lighten-4">
 		<div class="site-wrapper">
 		    <hello-world></hello-world>
 		</div>
-	    <script inline src="./assets/js/dist/app.min.js"></script>
 	</body>
 </html>`
 }

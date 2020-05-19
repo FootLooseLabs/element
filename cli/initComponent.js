@@ -18,7 +18,7 @@ var defaultCmpOpt = {
 var initComponent = (cmpObj) => {
 	var cmpObj = cmpObj || defaultCmpOpt;
 	console.log("creating component - ", cmpObj.name);
-	var _filename = "components/" + cmpObj.name + ".js";
+	var _filename = "src/components/" + cmpObj.name + ".js";
 	fs.writeFileSync(_filename, generateMarkup(_filename, componentMarkup, cmpObj), function (err) {
 	  if (err) {console.log(err);}
 	  console.log(_filename, ' component created successfully');

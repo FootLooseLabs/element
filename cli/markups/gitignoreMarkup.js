@@ -5,10 +5,8 @@ node_modules
 *.min.js
 *.min.css
 index.html
-components/dist/
-assets/js/dist
-assets/css/dist
-dist/`
+_cmps_tmp
+dist`
 }
 
 module.exports = {

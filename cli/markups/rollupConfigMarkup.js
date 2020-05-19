@@ -5,8 +5,8 @@ import replace from "rollup-plugin-replace";
 import { uglify } from "rollup-plugin-uglify";
 
 export default {
-    entry: "components/index.js",
-    dest: "dist/_cmps.js",
+    entry: "src/components/index.js",
+    dest: "_cmps_tmp/_cmps.js",
     format: "iife",
     sourceMap: "inline",
     plugins: [
