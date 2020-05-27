@@ -10,7 +10,12 @@ Introspector.initPort = (msgEv) => {
 		var introspectObj = [];
 		DOMComponentRegistry.list().forEach((_entry)=>{
 			_entry.instances.forEach((instance)=>{
-				var introspectableInstance = {name:instance.domElName, uid:instance.uid, stateSpace:instance.stateSpace};
+				var introspectableInstance = {
+					name:instance.domElName, 
+					uid:instance.uid, 
+					stateSpace:instance.stateSpace,
+					current_state: instance.current_state
+				};
 				introspectObj.push(introspectableInstance);
 			});
 		});
@@ -21,6 +26,7 @@ Introspector.initPort = (msgEv) => {
 Introspector.start = ()=> {
 	if(MUFFIN_CONFIG.INTROSPECT!=true){return;}
 	window.onmessage = function(msgEv){
+		if(MUFFIN_CONFIG.INTROSPECT!=true){return;}
 		console.log("imp:","initializing port", msgEv);
 		Introspector.initPort(msgEv);
 	}

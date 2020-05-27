@@ -9,9 +9,10 @@ window.MUFFIN_CONFIG = {
 window.Muffin = {};
 
 import { Logger } from "./logger.js";
+import { DataChannel } from "./data_component.js";
 import { DOMComponentRegistry, DataSource, PostOffice, DOMComponent } from "./dom_component.js";
 import { Router } from "./router.js";
-import "./include.js";
+import { IncludeFrag } from "./include.js";
 import { Introspector } from "./introspector.js";
 
 // Object.prototype.register = function(){ 
@@ -22,6 +23,11 @@ import { Introspector } from "./introspector.js";
 Logger.start();
 DOMComponentRegistry.start();
 Introspector.start();
+
+
+DOMComponentRegistry.register(DataChannel)
+DOMComponentRegistry.register(IncludeFrag)
+
 
 window.Muffin.Router = Router;
 window.Muffin.PostOffice = PostOffice;

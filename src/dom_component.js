@@ -120,7 +120,7 @@ class DOMComponent extends HTMLElement {
 		    }
 	   	}
 	   	
-	   	console.log("composed ancesstory ", this.domElName, ", ", this.uid);
+	   	console.log("composed ancesstry ", this.domElName, ", ", this.uid);
 	}
 
 	_initLogging() {
@@ -152,31 +152,41 @@ class DOMComponent extends HTMLElement {
 	}
 
 	_initComponentDataSrc(opt){
-		var _cmp_data = this._getCmpData();
-		if(_cmp_data){
-			var label = _cmp_data.getAttribute("label");
-			var socket = _cmp_data.getAttribute("socket");
-			this._log("imp:","initialising component data source");
-			// this.data_src = new DataSource(label, socket, this, proxy);
-			this.data_src = DataSource.getOrCreate(label, socket, this);
-			this.__initDataSrcInterface(label);
-		}
-		if(this.data_src){
-		 	Object.defineProperty(this, 'data', {
-		        get: ()=>{return this._postProcessCmpData.call(this, this.data_src.data);}
-		    });
-		}else{  //happens when _cmd_data is null or label is null
-			this._log("imp:","component data is null, directly rendering the component.");
-			this.render();
-		}
+		if (this.data_src) {
+	      this._log("imp:", "preventing reinitialisation of component data. (already initialised).");
+	      return;
+	    }
+	    var _cmp_data = this._getCmpData();
+
+	    if (_cmp_data) {
+	      var label = _cmp_data.getAttribute("label");
+	      var socket = _cmp_data.getAttribute("socket");
+	      this._log("imp:", "initialising component data source"); // this.data_src = new DataSource(label, socket, this, proxy);
+	      this.__initDataSrcInterface(label, socket);
+	    }
+		else {
+	      //happens when _cmd_data is null or label is null
+	      this._log("imp:", "component data is null, directly rendering the component.");
+	      this.render();
+	    }
 	}
 
-	__initDataSrcInterface(label) {
+	__initDataSrcInterface(label, socket) {
 		var _this = this;
 
-		this.broker = this.data_src.eventTarget.addEventListener(label, (ev)=>{
-			_this._onDataSrcUpdate.call(_this, ev);
-		});
+	    this.data_src = DataSource.getOrCreate(label, socket, this);
+
+	    if (this.data_src) {
+	      Object.defineProperty(this, 'data', {
+	        get: () => {
+	          return this._postProcessCmpData.call(this, this.data_src.data);
+	        }
+	      });
+	    }
+
+	    this.broker = this.data_src.eventTarget.addEventListener(label, ev => {
+	      _this._onDataSrcUpdate.call(_this, ev);
+	    }); 
 		// this.broker = PostOffice.registerBroker(this, label, (_msg)=>{
 		// 	_this._onDataSrcUpdate.call(_this, _msg)
 		// });
@@ -416,6 +426,30 @@ class DOMComponent extends HTMLElement {
 	  	return isEqual;
 	  }
 
+
+	__patchUnequalAttributes(node1, node2) {
+	    if (node1.attributes == node2.attributes) {
+	      return;
+	    }
+	    var ignoreAttributeList = [];
+	    Array.from(node1.attributes).forEach(_node1Attr => {
+	      if (ignoreAttributeList.includes(_node1Attr.name)) {
+	        return;
+	      }
+
+	      if (!node2.attributes[_node1Attr.name]) {
+	        //attribute is not present in node2
+	        node2.setAttribute(_node1Attr.name, _node1Attr.value);
+	      } else if (node2.getAttribute(_node1Attr.name) != _node1Attr.value) {
+	        //attribute value is different in node2
+	       	console.debug("patching attribute - ", _node1Attr.name, `: (old value = ${node2.attributes[_node1Attr.name].value}, new value = ${_node1Attr.value})`);
+	        node2.setAttribute(_node1Attr.name, _node1Attr.value);
+	        // node2.attributes[_node1Attr.name] = _node1Attr.value;
+	      } //if attribute present && value is same --> do no patching
+
+	    });
+	  }
+
 	async __findAndReplaceUnequalNodes (root1, root2) { //not used currently
   		var _this = this;
 
@@ -427,6 +461,8 @@ class DOMComponent extends HTMLElement {
         // if(root2.constructedFrom && root2.constructedFrom.domElName != this.domElName){
         // 	return;
         // }
+
+        this.__patchUnequalAttributes(root1, root2);
 
         if ((root1.children.length == 0 || root2.children.length == 0)) {
           // console.log("imp:", "patchDom: replacing node - ", root2, " with ", root1);
@@ -443,9 +479,12 @@ class DOMComponent extends HTMLElement {
           	if(_root2ChildNode.attributes.renderonlyonce){
           		return;
           	}
-          	if(_root2ChildNode.hasOwnProperty("constructedFrom")){
-          		return;
-          	}
+          	if (_root2ChildNode.hasOwnProperty("constructedFrom")) {
+		      	if(_root1ChildNode.attributes.volatile){
+		      		_root2ChildNode.replaceWith(_root1ChildNode);
+		      	}
+		      	return;
+		    } 
           	// _this.__findAndReplaceUnequalNodes(_root1ChildNode, _root2ChildNode);
 
    			if(!this.__isDOMTreeEqual(_root1ChildNode, _root2ChildNode)) {
@@ -544,6 +583,10 @@ class DOMComponent extends HTMLElement {
 	    TRASH_SCOPE.debugLastRenderedCmp = this;
 	    this._log("----------rendering component end-----------------");
 	    
+	    if(this.postRender){
+	    	this.postRender();
+	    }
+
 	    return this
   	}
 	
@@ -585,8 +628,8 @@ Object.defineProperty(DOMComponent, "compose", { //what if 2 parents are composi
 	set: function(composeFunc){ 
 			this._compose = function(){
 			// console.log("imp:","Updating Compose function of component ",this);
-			this.prototype.constructor._composeSelf();
 			composeFunc.call(this);
+			this.prototype.constructor._composeSelf();
 		} 
 	}
 });

@@ -91,6 +91,16 @@ Router.prototype.getRoute = function(route_name){
 	})[0]
 }
 
+Router.prototype.createOrReplaceRoute = function (routeObj) {
+  var idx = this.routes.findIndex((route)=>{
+  	return route.name == routeObj.name;
+  });
+  if(idx >= 0){
+  	this.routes.splice(idx,1);
+  }
+  this.addRoute(routeObj);
+};
+
 Router.prototype.closeRoute = function(routeObj, routeEl){
 	var _this = this;
 	if(!routeObj){return;}
@@ -115,7 +125,9 @@ Router.prototype.onStateChange = function(ev){
 		this._log('no such route');
 		return;
 	}
-	
+
+	this._onBeforeLoad(routeObj);
+
 	this.toggleRouteEl(routeObj);
 }
 
@@ -153,9 +165,15 @@ Router.prototype._closeAllActiveRoutesInScope = function(scope) {
 	});
 }
 
+Router.prototype._onBeforeLoad = function(routeObj, routeEl){
+	if(routeObj.onBeforeLoad){
+		routeObj.onBeforeLoad.call(this, routeEl, routeObj);
+	}
+}
+
 Router.prototype.toggleRouteEl = function(routeObj){
 	var routeEl = this.getRouteEl(routeObj.name);
-	if(!routeEl){_this._log('imp:','no elements with this route attr found');return;}
+	if(!routeEl){this._log('imp:','no elements with this route attr found');return;}
 
 	var _this = this;
 
@@ -207,11 +225,11 @@ Router.prototype.updateState = function(routeObj){
 		_this._log("route.name == ", routeObj.name);
 	}
 
-	if(routeObj.params){
-		for(var key in routeObj.params){
-			routeObj.url += ( "?" + String(key) + "=" + String(routeObj.params[key]) );
-		}
-	}
+	// if(routeObj.params){
+	// 	for(var key in routeObj.params){
+	// 		routeObj.url += ( "?" + String(key) + "=" + String(routeObj.params[key]) );
+	// 	}
+	// }
 
 
 	var historyTitle = routeObj.name;
@@ -261,8 +279,11 @@ Router.prototype.updateRouteObjParams = function (routeObj, url_params) {
 }
 
 Router.prototype.go = function(route_name, url_params){
-	var routeEl = this.getRouteEl(route_name);
-	if(!routeEl){return;}
+	// var routeEl = this.getRouteEl(route_name);
+	// if(!routeEl){
+	// 	this._log("imp:","no elements with this route attr found");
+	// 	return;
+	// }
 	var routeObj = this.getOrCreateRoute(route_name, url_params);
 	this.updateRouteObjParams(routeObj, url_params);
 	this.updateState(routeObj);
@@ -282,9 +303,14 @@ Router.prototype.getOrCreateRoute = function(route_name, url_params){
 	return routeObj;
 }
 
-Router.prototype.addRoute = function(routeObj){
+Router.prototype.addRoute = function(routeObj, options){
 	if(!routeObj){return;}
 	if(!routeObj.name){return;}
+	var options = options || {};
+	if(options.force) {
+		this.createOrReplaceRoute(routeObj);
+		return;
+	}
 	if(!this.getRoute(routeObj.name)){
 		this.routes.push(routeObj);
 	}

@@ -7,6 +7,7 @@ class PostOffice extends Object {
 
 	static addSocket(_constructor, name, _url) {
 		PostOffice.sockets[name] = new PostOffice.Socket(_constructor, name, _url);
+		return PostOffice.sockets[name];
 	}
 
 	static _getRegistry() {
