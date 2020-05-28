@@ -228,6 +228,27 @@ class DOMComponent extends HTMLElement {
 	 //    });
 	} 
 
+	_getRouteContext() {
+		var closestRoute = this.closest("[route]") || this._getDomNode().closest("[route]");
+		if(!closestRoute){return false;}
+		var routeName = closestRoute.getAttribute("route");
+		return _router.getRoute(routeName);
+	}
+
+	_initRouteInterface(opt) {
+		var routeContext = this._getRouteContext();
+		if(!routeContext){return;}
+		var routeSocket = PostOffice.sockets[`${routeContext.socketName}`];
+		if(!routeSocket){return;}
+		var _this = this;
+		routeSocket.addListener("onBeforeLoad",(ev)=>{
+			_this.routeVars = ev.detail;
+			if(_this.onBeforeRouteLoad){
+				_this.onBeforeRouteLoad();
+			}
+		});
+	}
+
 	_initLifecycle(opt) {
 		this._initUiVars(opt);
 
@@ -235,6 +256,7 @@ class DOMComponent extends HTMLElement {
 
 		this._initComponentDataSrc(opt);
 
+		this._initRouteInterface(opt);
 	}
 
 	_postProcessCmpData(newData) {
@@ -442,7 +464,7 @@ class DOMComponent extends HTMLElement {
 	        node2.setAttribute(_node1Attr.name, _node1Attr.value);
 	      } else if (node2.getAttribute(_node1Attr.name) != _node1Attr.value) {
 	        //attribute value is different in node2
-	       	console.debug("patching attribute - ", _node1Attr.name, `: (old value = ${node2.attributes[_node1Attr.name].value}, new value = ${_node1Attr.value})`);
+	       	// console.debug("patching attribute - ", _node1Attr.name, `: (old value = ${node2.attributes[_node1Attr.name].value}, new value = ${_node1Attr.value})`);
 	        node2.setAttribute(_node1Attr.name, _node1Attr.value);
 	        // node2.attributes[_node1Attr.name] = _node1Attr.value;
 	      } //if attribute present && value is same --> do no patching
@@ -559,7 +581,7 @@ class DOMComponent extends HTMLElement {
 	    var _this = this;
 
 	    try{
-	      var _rendered = this.markupFunc(this.data, this.uid, this.uiVars, this.constructor); 
+	      var _rendered = this.markupFunc(this.data, this.uid, this.uiVars, this.routeVars, this.constructor); 
 	    }catch(e){
 	      this._log("imp:", "error in rendering component - ", e);
 	      return;

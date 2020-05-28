@@ -1,4 +1,4 @@
-
+import { PostOffice } from "./post_office";
 
 //to include-html end
 
@@ -36,20 +36,43 @@ Router.prototype._log = function() {
 	}
 }
 
-Router.prototype.getRoutePathFromWindowLocation = function() {
-	var routePath = window.location.search.split("?").pop() || this.getDefaultRoute().name;
+
+
+Router.prototype._getParamsObjFromPathString = function(pathString) {
+	var paramsStrList = pathString.split("?").pop().split("&");
+	paramsStrList.shift();
+	return paramsStrList.map((_paramStr)=>{
+	    var paramSplit = _paramStr.split("=");
+	    var paramObj = {};
+	    paramObj[paramSplit[0]] = paramSplit[1];
+	    return paramObj
+	}).reduce((accum, curr)=> {
+	   return {...accum, ...curr}
+	},{})
+}
+
+Router.prototype.getCurrentRouteParams = function(){
+	if(window.history.state){
+		return this._getParamsObjFromPathString(window.history.state.url);
+	}else{ //if url is loaded by directly entering into the address bar
+		return this._getParamsObjFromPathString(window.location.search);
+	}
+}
+
+Router.prototype._getRouteNameFromWindowLocation = function() {
+	var routePath = window.location.search.split("?").pop().split("&").shift() || this.getDefaultRoute().name;
 	return routePath;
 }
 
-Router.prototype.getRoutePathFromHistoryState = function() {
+Router.prototype._getRouteNameFromHistoryState = function() {
 	return window.history.state.name;
 }
 
-Router.prototype.getCurrentRoute = function(){
+Router.prototype.getCurrentRouteName = function(){
 	if(window.history.state){
-		return this.getRoutePathFromHistoryState();
-	}else{
-		return this.getRoutePathFromWindowLocation();
+		return this._getRouteNameFromHistoryState();
+	}else{ //if url is loaded by directly entering into the address bar
+		return this._getRouteNameFromWindowLocation();
 	}
 }
 
@@ -57,7 +80,7 @@ Router.prototype._initListeners = function(){
 	var _this = this;
 	window.onpopstate = function(){ //not called wgeb durectly called by script (only called on browser actions by user)
 		_this._log("imp:", "onpopstate start");
-		var routeName = _this.getCurrentRoute();
+		var routeName = _this.getCurrentRouteName();
 		var routeObj = _this.getRoute(routeName);
 		_this._log("imp:", "onpopstate end");
 		_this.triggerCustomEvent(window,'stateChange',{state: routeObj});
@@ -68,8 +91,7 @@ Router.prototype._initListeners = function(){
 	});
 
 	document.addEventListener('DOMContentLoaded', (e) => {
-		var routeName = _this.getCurrentRoute();
-		_this.go(routeName);
+		_this.go(_this.getCurrentRouteName(),_this.getCurrentRouteParams());
 	},false);
 }
 
@@ -165,9 +187,20 @@ Router.prototype._closeAllActiveRoutesInScope = function(scope) {
 	});
 }
 
-Router.prototype._onBeforeLoad = function(routeObj, routeEl){
+Router.prototype._onBeforeLoad = function(routeObj){
+
+	if(routeObj.socketName && PostOffice.sockets[routeObj.socketName]){
+		PostOffice.sockets[routeObj.socketName].dispatchMessage(new CustomEvent("onBeforeLoad",{
+			detail: {
+				name: routeObj.name,
+		        url: routeObj.url,
+		        params: routeObj.params
+		    }
+		}));
+	}
+
 	if(routeObj.onBeforeLoad){
-		routeObj.onBeforeLoad.call(this, routeEl, routeObj);
+		routeObj.onBeforeLoad.call(this, routeObj);
 	}
 }
 
@@ -221,20 +254,25 @@ Router.prototype.updateState = function(routeObj){
 
 	if(this.isSubRoute(routeObj)){
 		var ancesstorRouteNames = this.getRouteAncesstors(routeObj.name).routes;
-		routeObj.url = ancesstorRouteNames.join("/") + "/" + routeObj.name;
-		_this._log("route.name == ", routeObj.name);
+		routeObj.url = "?" + ancesstorRouteNames.concat(routeObj.name).join("/");
+		_this._log("updating historyUrl for sub-route == ", routeObj.url);
+	}else{
+		routeObj.url = `?${routeObj.name}`;
+		_this._log("updating historyUrl for route: ", routeObj.url);
 	}
 
-	// if(routeObj.params){
-	// 	for(var key in routeObj.params){
-	// 		routeObj.url += ( "?" + String(key) + "=" + String(routeObj.params[key]) );
-	// 	}
-	// }
+	if(routeObj.params){
+		for(var key in routeObj.params){
+			routeObj.url += ( "&" + String(key) + "=" + String(routeObj.params[key]) );
+		}
+	}
 
 
 	var historyTitle = routeObj.name;
-	var historyUrl = "?" + routeObj.name;
+	var historyUrl = routeObj.url;
 	var historyData = { name: historyTitle, url: historyUrl };
+
+	_this._log("updating history State: ", JSON.stringify(historyData));
 
 	try{
 		window.history.pushState(historyData, historyTitle, historyUrl);
@@ -253,7 +291,7 @@ Router.prototype.back = function(){
 Router.prototype.isSubRoute = function(routeObj){
 	var routeEl = this.getRouteEl(routeObj.name);
 	if(!routeEl){return false;}
-	return true;
+	// return true;
 	return routeEl.hasAttribute('sub-route') ? true : false;
 }
 
@@ -303,10 +341,20 @@ Router.prototype.getOrCreateRoute = function(route_name, url_params){
 	return routeObj;
 }
 
+Router.prototype.initSocket = function(socketName){
+	this._log("imp:","initializing socket = ", socketName);
+	PostOffice.addSocket(EventTarget, socketName);
+}
+
 Router.prototype.addRoute = function(routeObj, options){
 	if(!routeObj){return;}
 	if(!routeObj.name){return;}
 	var options = options || {};
+
+	if(routeObj.socketName){
+		this.initSocket(routeObj.socketName);
+	}
+
 	if(options.force) {
 		this.createOrReplaceRoute(routeObj);
 		return;
