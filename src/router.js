@@ -194,7 +194,8 @@ Router.prototype._onBeforeLoad = function(routeObj){
 			detail: {
 				name: routeObj.name,
 		        url: routeObj.url,
-		        params: routeObj.params
+		        params: routeObj.params,
+		        active: routeObj.active
 		    }
 		}));
 	}
@@ -291,7 +292,7 @@ Router.prototype.back = function(){
 Router.prototype.isSubRoute = function(routeObj){
 	var routeEl = this.getRouteEl(routeObj.name);
 	if(!routeEl){return false;}
-	// return true;
+	return true;
 	return routeEl.hasAttribute('sub-route') ? true : false;
 }
 

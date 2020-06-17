@@ -46,8 +46,12 @@ class DOMComponent extends HTMLElement {
 		this.current_state = "idle";
 		this.opt = opt;
 		this.eventTarget = new EventTarget();
+		this.interface = PostOffice.addSocket(EventTarget, this.label());
 	}
 
+	label() {
+		return this.domElName + " #" + this.uid;
+	}
 
 	connectedCallback() {
 		var opt = this.opt;
@@ -60,6 +64,9 @@ class DOMComponent extends HTMLElement {
 
 	_onDataSrcUpdate(ev) {
 		this._log("imp:",this.data_src.label,"- ","component data update signal received");
+		this.interface.dispatchMessage(new CustomEvent("datasrc-update",{
+        	detail: {uiVars: this.uiVars, data: this.data}
+        }));
 		this.render();
 	}
 
@@ -124,7 +131,7 @@ class DOMComponent extends HTMLElement {
 	}
 
 	_initLogging() {
-		this._logPrefix =  this.domElName + " #" + this.uid + ":";
+		this._logPrefix =  this.label() + ":";
 		this._logStyle = "font-size: 12px; color:darkred";
 		console.group(this._logPrefix);		
 	}
@@ -232,10 +239,11 @@ class DOMComponent extends HTMLElement {
 		var closestRoute = this.closest("[route]") || this._getDomNode().closest("[route]");
 		if(!closestRoute){return false;}
 		var routeName = closestRoute.getAttribute("route");
-		return _router.getRoute(routeName);
+		return this.router.getRoute(routeName);
 	}
 
-	_initRouteInterface(opt) {
+	_initRouteInterface(opt) { //updation of routeVars
+		if(!this.router){return;}
 		var routeContext = this._getRouteContext();
 		if(!routeContext){return;}
 		var routeSocket = PostOffice.sockets[`${routeContext.socketName}`];
@@ -372,13 +380,16 @@ class DOMComponent extends HTMLElement {
         			this.uiVars.state = { name: stateName, meta: targetState};
 	        		this.render();
 	        	}catch(e){
-	        		this._log("imp:", "Transition error - ", e);
+	        		console.error("Transition error - ", e);
 	        	}
 	        }else{
 	        	this.current_state = stateName;
         		this.uiVars.state = { name: stateName, meta: targetState};
         		this.render();
 	        }
+	        this.interface.dispatchMessage(new CustomEvent("state-change",{
+	        	detail: {uiVars: this.uiVars, data: this.data}
+	        }))
 	        this._log("imp:", "Switched State To - ", this.current_state);
         }
 
@@ -520,7 +531,6 @@ class DOMComponent extends HTMLElement {
 
 
     __patchRootNodeAttrs(rootNode) {
-        console.log("imp:", "Not patching dom - as renderonlyonce declared in rootNode");
         rootNode.dataset.state = this.current_state;
 	  }
 
@@ -555,9 +565,10 @@ class DOMComponent extends HTMLElement {
 	        	return;
 	        }
 	        if(in_dom){
+	        	this.__patchRootNodeAttrs(cmp_dom_node);
 	        	if(cmp_dom_node.attributes.renderonlyonce){
 	        		this.__patchStyle(cmp_dom_node);
-		      		this.__patchRootNodeAttrs(cmp_dom_node);
+		      		console.log("imp:", "Not patching dom - as renderonlyonce declared in rootNode");
 		      		return;
 	        	}
 

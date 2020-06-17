@@ -148,7 +148,14 @@ PostOffice.Socket = class PostOfficeSocket {
 	}
 
 	addListener(label, cb) {
-		this.defaultScope.addEventListener(label,cb);
+		return new Promise((resolve, reject)=>{
+			var _cb = (ev)=> {
+				var result = cb(ev);
+				resolve(result);
+			}
+			this.defaultScope.addEventListener(label,_cb);
+		});
+		// this.defaultScope.addEventListener(label,cb);
 		this.listeners.push({label:label,cb:cb});
 	}
 }
