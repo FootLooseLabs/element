@@ -1,13 +1,4 @@
-window.LOGGING_LEVEL = "NODEBUG";
-window.TRASH_SCOPE = {};
-
-window.MUFFIN_CONFIG = {
-	"LOGGING_LEVEL" : "IMP",
-	"POST_OFFICE_WORKER_URL": "muffin_po_worker.js",
-	"INTROSPECT": true
-};
-window.Muffin = {};
-
+import { DefaultConfig } from "./config.js";
 import { Logger } from "./logger.js";
 import { DataChannel } from "./data_component.js";
 import { DOMComponentRegistry, DataSource, PostOffice, DOMComponent } from "./dom_component.js";
@@ -19,6 +10,8 @@ import { Introspector } from "./introspector.js";
 // 	if(!(this.prototype instanceof DOMComponent)){return;}
 // 	DOMComponentRegistry.register(this);
 // }
+
+window.Muffin = {};
 
 Logger.start();
 DOMComponentRegistry.start();

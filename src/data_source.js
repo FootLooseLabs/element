@@ -1,7 +1,16 @@
 import { PostOffice } from "./post_office.js";
 // var localforage = require(["/node_modules/localforage/dist/localforage.js"]);
 // import localforage from "/node_modules/localforage/src/localforage.js";
+import { DefaultConfig } from "./config.js";
+
 import "localforage";
+
+
+localforage.config({
+	name: DefaultConfig.DB_NAME,
+	version: DefaultConfig.DB_VERSION
+});
+
 
 class DataSource{   //returns null only if this.label is null
 

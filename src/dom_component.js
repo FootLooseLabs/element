@@ -3,6 +3,7 @@ import { DOMComponentRegistry } from "./dom_component_registry.js";
 import { PostOffice } from "./post_office.js";
 import { DataSource } from "./data_source.js";
 import { stringToHTMLFrag } from "./utils.js";
+import { DefaultConfig } from "./config.js";
 
 class DOMComponent extends HTMLElement {
 
@@ -28,7 +29,7 @@ class DOMComponent extends HTMLElement {
 	constructor(opt){
 		super();
 		if(this._isDebuggale()){
-			TRASH_SCOPE._debugCmp = this;
+			DefaultConfig.DEBUG_SCOPE._debugCmp = this;
 		}
 		var opt = opt || {};
 
@@ -47,10 +48,24 @@ class DOMComponent extends HTMLElement {
 		this.opt = opt;
 		this.eventTarget = new EventTarget();
 		this.interface = PostOffice.addSocket(EventTarget, this.label());
+
+		this._preInit();
 	}
 
 	label() {
 		return this.domElName + " #" + this.uid;
+	}
+
+	_setupDomContentLoadedCallback() {
+		document.addEventListener("DOMContentLoaded",(ev)=>{
+			if(this.onDomContentLoaded){
+				this.onDomContentLoaded();
+			}
+		});
+	}
+
+	_preInit() {
+		this._setupDomContentLoadedCallback();
 	}
 
 	connectedCallback() {
@@ -551,7 +566,7 @@ class DOMComponent extends HTMLElement {
 
     __patchDOM() {
     	if(this.attributes.stop){
-	      TRASH_SCOPE.stoppedCmp = this;
+	      DefaultConfig.DEBUG_SCOPE.stoppedCmp = this;
 	      return;
 	    }
 
@@ -613,7 +628,7 @@ class DOMComponent extends HTMLElement {
 	    
 	    this.__patchDOM();
 
-	    TRASH_SCOPE.debugLastRenderedCmp = this;
+	    DefaultConfig.DEBUG_SCOPE.debugLastRenderedCmp = this;
 	    this._log("----------rendering component end-----------------");
 	    
 	    if(this.postRender){

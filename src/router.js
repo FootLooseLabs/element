@@ -238,6 +238,9 @@ Router.prototype._onload = function(target_route, target_page){
 	if(target_route.onload){
 		target_route.onload.call(this, target_page, target_route);
 	}
+	if(this.onroutechange){
+		this.onroutechange(target_route, target_page);
+	}
 }
 
 Router.prototype.triggerCustomEvent = function(target, eventName, details){

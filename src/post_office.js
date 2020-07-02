@@ -65,14 +65,14 @@ class PostOffice extends Object {
 	}
 
 	static broadcastMsg (label, msg, _scope){
-		  if(!label){return;}
-		  var _scope = _scope || PostOffice.getDefaultScope();
-		  var evnt = new CustomEvent(label, {
-		      detail: msg
-		    });
-		  _scope.dispatchEvent(evnt);
-		  PostOffice._runBroker(label,msg, _scope);
-		}
+		if(!label){return;}
+		var _scope = _scope || PostOffice.getDefaultScope();
+		var evnt = new CustomEvent(label, {
+		    detail: msg
+		});
+		_scope.dispatchEvent(evnt);
+		PostOffice._runBroker(label,msg, _scope);
+	}
 }
 
 PostOffice.sockets = {};
@@ -145,6 +145,15 @@ PostOffice.Socket = class PostOfficeSocket {
 	dispatchMessage(msgEv) {
 		this.defaultScope.dispatchEvent(msgEv);
 		console.log("imp:","PostOfficeSocket: ", this.name, " - dispatched message = ", msgEv);
+	}
+
+	broadcastMsg (label, msg, _scope){
+		if(!label){return;}
+		var _scope = _scope || this.defaultScope;
+		var evnt = new CustomEvent(label, {
+		    detail: msg
+		});
+		_scope.dispatchEvent(evnt);
 	}
 
 	addListener(label, cb) {

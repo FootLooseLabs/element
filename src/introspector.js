@@ -1,12 +1,14 @@
+import { DefaultConfig } from "./config.js";
+
 var Introspector = {};
 Introspector.initPort = (msgEv) => {
-	if(MUFFIN_CONFIG.INTROSPECT!=true){return;}
+	if(DefaultConfig.INTROSPECT!=true){return;}
 	Introspector.port2 = msgEv.ports[0];
 	if(!Introspector.port2){
 		return;
 	}
 	Introspector.port2.onmessage = () => {
-		if(MUFFIN_CONFIG.INTROSPECT!=true){return;}
+		if(DefaultConfig.INTROSPECT!=true){return;}
 		var introspectObj = [];
 		DOMComponentRegistry.list().forEach((_entry)=>{
 			_entry.instances.forEach((instance)=>{
@@ -24,9 +26,9 @@ Introspector.initPort = (msgEv) => {
     };
 }
 Introspector.start = ()=> {
-	if(MUFFIN_CONFIG.INTROSPECT!=true){return;}
+	if(DefaultConfig.INTROSPECT!=true){return;}
 	window.onmessage = function(msgEv){
-		if(MUFFIN_CONFIG.INTROSPECT!=true){return;}
+		if(DefaultConfig.INTROSPECT!=true){return;}
 		console.log("imp:","initializing port", msgEv);
 		Introspector.initPort(msgEv);
 	}

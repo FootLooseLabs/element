@@ -1,3 +1,5 @@
+import { DefaultConfig } from "./config.js";
+
 class Logger {
 	static styles = {
 		"imp": "font-weight: bold; color: #1B2B34;",
@@ -11,7 +13,7 @@ class Logger {
 Logger.start = () => {
 	Logger.__log = console.log;
 	console.log = function() {
-		if(MUFFIN_CONFIG.LOGGING_LEVEL == "NONE"){return;}
+		if(DefaultConfig.LOGGING_LEVEL == "NONE"){return;}
 
 		if(arguments[0]==="imp:"){
 			var argumentsArr = Array.prototype.slice.call(arguments);
@@ -19,7 +21,7 @@ Logger.start = () => {
 			Logger.__log.apply(this, msgArr);
 		}
 
-		if(MUFFIN_CONFIG.LOGGING_LEVEL !== "DEBUG"){return;}
+		if(DefaultConfig.LOGGING_LEVEL !== "DEBUG"){return;}
     	Logger.__log.apply(this, arguments);
 	}
 };
