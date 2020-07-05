@@ -259,13 +259,19 @@ class DOMComponent extends HTMLElement {
 
 	_initRouteInterface(opt) { //updation of routeVars
 		if(!this.router){return;}
-		var routeContext = this._getRouteContext();
-		if(!routeContext){return;}
-		var routeSocket = PostOffice.sockets[`${routeContext.socketName}`];
-		if(!routeSocket){return;}
+		// var routeContext = this._getRouteContext();
+		// if(!routeContext){return;}
+		// var routeSocket = PostOffice.sockets[`${routeContext.socketName}`];
+		// if(!routeSocket){return;}
 		var _this = this;
-		routeSocket.addListener("onBeforeLoad",(ev)=>{
-			_this.routeVars = ev.detail;
+		// routeSocket.addListener("onBeforeLoad",(ev)=>{
+		// 	_this.routeVars = ev.detail;
+		// 	if(_this.onBeforeRouteLoad){
+		// 		_this.onBeforeRouteLoad();
+		// 	}
+		// });
+		this.router._socket.addListener("onBeforeLoad",(ev)=>{ //this.router._socket - enables passing routeVars without specifying each route level config (socketName)  
+			_this.routeVars = ev.detail;	//all routes with this router will get this routeVars unlike the commented approach above.
 			if(_this.onBeforeRouteLoad){
 				_this.onBeforeRouteLoad();
 			}

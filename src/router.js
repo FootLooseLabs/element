@@ -18,6 +18,8 @@ Router.prototype.__init__ = function(){
 
 	this._initListeners();
 
+	this._initSocket();
+
 	this._log('router initialized');
 }
 
@@ -36,6 +38,10 @@ Router.prototype._log = function() {
 	}
 }
 
+
+Router.prototype._initSocket = function() {
+	this._socket = PostOffice.addSocket(EventTarget,"element_router");
+}
 
 
 Router.prototype._getParamsObjFromPathString = function(pathString) {
@@ -199,6 +205,15 @@ Router.prototype._onBeforeLoad = function(routeObj){
 		    }
 		}));
 	}
+
+	this._socket.dispatchMessage(new CustomEvent("onBeforeLoad",{
+		detail: {
+			name: routeObj.name,
+	        url: routeObj.url,
+	        params: routeObj.params,
+	        active: routeObj.active
+	    }
+	}));
 
 	if(routeObj.onBeforeLoad){
 		routeObj.onBeforeLoad.call(this, routeObj);
