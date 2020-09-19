@@ -385,6 +385,10 @@ class DOMComponent extends HTMLElement {
 	    // })
   	}
 
+  	// advertiseInterface() {
+  	// 	PostOffice.addSocket
+  	// }
+
   	switchState(stateName) {
         var targetState = this.stateSpace[stateName];
         if (!targetState) { return; }

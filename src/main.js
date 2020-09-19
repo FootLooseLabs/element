@@ -1,5 +1,6 @@
 import { DefaultConfig } from "./config.js";
 import { Logger } from "./logger.js";
+import { Lexeme } from "./lexeme.js";
 import { DataChannel } from "./data_component.js";
 import { DOMComponentRegistry, DataSource, PostOffice, DOMComponent } from "./dom_component.js";
 import { Router } from "./router.js";
@@ -21,7 +22,7 @@ Introspector.start();
 DOMComponentRegistry.register(DataChannel)
 DOMComponentRegistry.register(IncludeFrag)
 
-
+window.Muffin.Lexeme = Lexeme;
 window.Muffin.Router = Router;
 window.Muffin.PostOffice = PostOffice;
 window.Muffin.DOMComponentRegistry = DOMComponentRegistry;

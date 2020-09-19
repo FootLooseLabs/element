@@ -7,7 +7,7 @@ const license = require('rollup-plugin-license');
 
 
 export default {
-  entry: 'src/muffin.js',
+  entry: 'src/main.js',
   dest: 'dist/muffin.min.js',
   format: 'iife',
   sourceMap: 'inline',
