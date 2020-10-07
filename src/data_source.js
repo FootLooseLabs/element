@@ -89,8 +89,8 @@ class DataSource{   //returns null only if this.label is null
 		}
 		var _this = this;
 		if(this.socket){
-			this.socket.addListener(this.label, (msgEv) => {
-				_this._onmsg.call(_this, msgEv);
+			this.socket.addListener(this.label, (_msg) => {
+				_this._onmsg.call(_this, _msg);
 			});
 		}
 	}
@@ -210,16 +210,14 @@ class DataSource{   //returns null only if this.label is null
 	// 	console.groupEnd()
 	// }
 
-	_onmsg (msgEv) {
+	_onmsg (_msg) {
 		// var _msgStr = msgEv.data;
   		// try{
   		// 	var _msg = JSON.parse(_msgStr);
   		// }catch(e){ //not valid msg
   		// 	return;
   		// }
-  		this._log("imp:", "received msg - ", msgEv);
-
-  		var _msg = msgEv.detail;
+  		this._log("imp:", "received msg - ", _msg);
 
   		if(!this._authenticateMsg(_msg)){
   			this._log("imp:","msg authentication failed for - ", _msg);

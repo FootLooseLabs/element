@@ -3,7 +3,8 @@ class PostOffice extends Object {
 	// constructor() {
 	// 	this.registry = [];
 	// }
-	static defaultScope = new EventTarget();
+
+	// static defaultScope = PostOffice.addSocket(EventTarget,"global");
 
 	static addSocket(_constructor, name, _url) {
 		PostOffice.sockets[name] = new PostOffice.Socket(_constructor, name, _url);
@@ -48,11 +49,17 @@ class PostOffice extends Object {
 		}
 	}
 
-	static registerBroker (_thisArg, label,_cb,scope){
+	static registerBroker(label,_cb,scope){
 		if(!label){return;}
 		var scope = scope || PostOffice.getDefaultScope();
 		PostOffice._createOrUpdateBroker(label, _cb, scope);
 	}
+
+	// static addListener(label,_cb,scope){
+	// 	if(!label){return;}
+	// 	var scope = scope || PostOffice.getDefaultScope();
+	// 	PostOffice._createOrUpdateBroker(label, _cb, scope);
+	// }
 
 
 	static _runBroker (label, msg, _scope) {
@@ -156,16 +163,27 @@ PostOffice.Socket = class PostOfficeSocket {
 		_scope.dispatchEvent(evnt);
 	}
 
+	dispatchEvent (msgEv){ //for forward compat
+		this.defaultScope.dispatchEvent(msgEv);
+		console.log("imp:","PostOfficeSocket: ", this.name, " - dispatched message = ", msgEv);
+	}
+
 	addListener(label, cb) {
 		return new Promise((resolve, reject)=>{
 			var _cb = (ev)=> {
-				var result = cb(ev);
-				resolve(result);
+
+				try{
+					var result = cb(ev.detail);
+					resolve(result);
+				}catch(e){
+					reject(e);
+				}
 			}
 			this.defaultScope.addEventListener(label,_cb);
+			this.listeners.push({label:label,cb:cb});
 		});
 		// this.defaultScope.addEventListener(label,cb);
-		this.listeners.push({label:label,cb:cb});
+		// this.listeners.push({label:label,cb:cb});
 	}
 }
 
@@ -253,6 +271,10 @@ PostOffice.Message = class PostOfficeMessage {
     }
 }
 
+PostOffice.defaultScope = PostOffice.addSocket(EventTarget,"global");
+PostOffice.sockets.global.onmessage = (ev)=>{
+	return ev;
+}
 
 export {
 	PostOffice
