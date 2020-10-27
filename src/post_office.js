@@ -49,10 +49,14 @@ class PostOffice extends Object {
 		}
 	}
 
-	static registerBroker(label,_cb,scope){
-		if(!label){return;}
-		var scope = scope || PostOffice.getDefaultScope();
-		PostOffice._createOrUpdateBroker(label, _cb, scope);
+	// static registerBroker(label,_cb,scope){  //legacy code - comments kept for referece in case anything breaks
+	// 	if(!label){return;}
+	// 	var scope = scope || PostOffice.getDefaultScope();
+	// 	PostOffice._createOrUpdateBroker(label, _cb, scope);
+	// }
+
+	static addGlobalListener(_label,_cb){ //new version - refer to older version in case of fallacies
+		return PostOffice.sockets.global.addListener(_label, _cb);
 	}
 
 	// static addListener(label,_cb,scope){
@@ -87,12 +91,14 @@ PostOffice.registry = [];
 
 PostOffice.Socket = class PostOfficeSocket {
 	constructor(_constructor, name, url) {
-	  var _constructor = _constructor || WebSocket;
+	  this.constructedFrom = _constructor || WebSocket;
 	  this.name = name;
 	  this.url = url;
-	  this.socket = new _constructor(url);
+	  this.socket = new this.constructedFrom(url);
 	  this.defaultScope = new EventTarget();
 	  this.listeners = [];
+	  this.autoRetryOnClose = true;
+	  this.autoRetryInterval = 5;
 	  this.__init__();
 	}
 
@@ -106,7 +112,19 @@ PostOffice.Socket = class PostOfficeSocket {
 		}
 
 	  	this.socket.addEventListener("message", (msgEv)=>{
-	  		_this._onMsg.call(_this, msgEv)
+	  		_this._handleSocketMsgEv.call(_this, msgEv)
+	  	});
+
+	  	this.socket.addEventListener("close", (ev)=>{
+	  		_this._handleSocketCloseEv.call(_this, ev);
+	  	});
+
+	  	this.socket.addEventListener("open", (ev)=>{
+	  		_this._handleSocketOpenEv.call(_this, ev);
+	  	});
+
+	  	this.socket.addEventListener("error", (ev)=>{
+	  		_this._handleSocketErrorEv.call(_this, ev);
 	  	});
 	}
 
@@ -120,9 +138,8 @@ PostOffice.Socket = class PostOfficeSocket {
 	}
 
 	onmessage(socketMsgEv) { //custom onmessage functions can be provided by the developer.
-		console.log("imp:", socketMsgEv);
 		var _msgStr = socketMsgEv.data;
-		if(_msgStr=="response:"){return;} //ping-pong messages exchanged in keepAlive
+		if(_msgStr=="pong"){return;} //ping-pong messages exchanged in keepAlive
 		var ev = null;
 		try{
   			var _msg = JSON.parse(_msgStr);
@@ -135,13 +152,41 @@ PostOffice.Socket = class PostOfficeSocket {
   				detail: _msg
   			});
   		}
-  		return ev;
+  		return ev; //must return an event object
 	}
 
-	_onMsg(socketMsgEv) {
+
+	_handleSocketErrorEv(ev) {
+		this.dispatchMessage(ev.type, ev);
+		console.error(`PostOffice.Socket:::${this.name} errored`);
+	}
+
+	_handleSocketOpenEv(ev) {
+		this.dispatchMessage(ev.type, ev);
+		console.debug(`PostOffice.Socket:::${this.name} opened - `, ev);
+	}
+
+	_handleSocketCloseEv(ev) {
+		this.dispatchMessage(ev.type, ev);
+  		console.debug(`PostOffice.Socket:::${this.name} closed`);
+  		if(this.autoRetryOnClose == true){
+  			console.debug(`PostOffice.Socket:::${this.name} retrying connection in ${this.autoRetryInterval}s`);
+  			setTimeout(()=>{
+  				console.debug(`PostOffice.Socket:::${this.name} attempting to connect again`);
+  				this.socket = new this.constructedFrom();
+  				this.__init__();
+  			}, this.autoRetryInterval*1000);
+  			return;
+  		}
+	}
+
+	_handleSocketMsgEv(socketMsgEv) {
+		console.debug(`Socket:::${this.name} (incoming) received msg = `, socketMsgEv);
 		var msgEv = this.onmessage(socketMsgEv);
+
+		console.debug(`Socket:::${this.name} (processed msgEv) = `, msgEv);
 		if(msgEv){
-			this.dispatchMessage(msgEv);
+			this.dispatchEvent(msgEv);
 		}
 	}
 
@@ -149,9 +194,55 @@ PostOffice.Socket = class PostOfficeSocket {
 		this.socket.send(msg);
 	}
 
-	dispatchMessage(msgEv) {
-		this.defaultScope.dispatchEvent(msgEv);
-		console.log("imp:","PostOfficeSocket: ", this.name, " - dispatched message = ", msgEv);
+
+	sendMsg({lexemeName, msg}) {
+        return new Promise((resolve, reject)=>{
+        	console.debug(`DEBUG: ${this.name}:`, "sending message = ", lexemeName, msg);
+
+        	var lexeme = this.LEXICON[lexemeName];
+
+        	if(!lexeme){
+        		let err = `Error: No such lexeme --> ${lexemeName}`;
+	            reject({error: err});
+	            return;
+        	}
+
+	        try {
+	            var inflection = lexeme.inflect(msg);
+	            if(!inflection){
+	            	let err = `Error: Invalid msg form for ${lexemeName} --> ${inflection}`;
+	                console.error(err);
+	                reject({error: err})
+	                return;
+	            }
+	        } catch (e) {
+	            console.error("Error:", "error inflecting msg lexeme: ", e);
+	            reject({error: e});
+	            return;
+	        }
+
+	        console.debug(`DEBUG: ${this.name}: `, "Inflected Form = ", inflection.stringify());
+
+	        let payloadJsonStr = inflection.stringify();
+	        // payloadJsonStr = payloadJsonStr.replace(/\\n/g, '');
+	        this.socket.send(payloadJsonStr);
+
+	        console.debug(`DEBUG: ${this.name}:`, "message sent = ", payloadJsonStr);
+
+	        resolve({error: null});
+        }); 
+    }
+
+	_msgToEv(_label,_msg) {
+		let label = _label || "anonymous-event";
+		return new CustomEvent(_label, {
+			detail: _msg
+		});
+	}
+
+	dispatchMessage(label, msg){
+		let ev = this._msgToEv(label, msg);
+		this.defaultScope.dispatchEvent(ev);
 	}
 
 	broadcastMsg (label, msg, _scope){

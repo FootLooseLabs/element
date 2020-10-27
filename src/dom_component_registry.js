@@ -8,7 +8,7 @@ class DOMComponentRegistry {
 			console.log("DOMComponentRegistry already started");
 			return;
 		}
-		PostOffice.registerBroker(this, DOMComponentRegistry.brokerLabel(), (ev)=> {
+		PostOffice.addGlobalListener(DOMComponentRegistry.brokerLabel(), (ev)=> {
 			console.log("registering new component - ", ev.detail);
 			// customElements.define(e.detail.name, e.detail._constructor);
 		});

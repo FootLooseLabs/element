@@ -217,7 +217,7 @@ class DataSource{   //returns null only if this.label is null
   		// }catch(e){ //not valid msg
   		// 	return;
   		// }
-  		this._log("imp:", "received msg - ", _msg);
+  		this._log("imp:", "DataSrc received msg - ", _msg);
 
   		if(!this._authenticateMsg(_msg)){
   			this._log("imp:","msg authentication failed for - ", _msg);
@@ -226,11 +226,14 @@ class DataSource{   //returns null only if this.label is null
 
   		// console.group(this._logPrefix);
   		
-  		this._log("imp:", "got msg - ", JSON.stringify(_msg));
+  		this._log("imp:", "DataSrc validated msg - ", JSON.stringify(_msg));
 
-  		if(_msg.data){
-  			console.dir(_msg.data);
-  			this._updateData(_msg.data);
+  		if(_msg.data || _msg.result){
+  			let _dataToStore = _msg.data || _msg.result;
+
+  			console.debug(`DataSource: ${this.label} stroring the following data - `);
+  			console.dir(_dataToStore);
+  			this._updateData(_dataToStore);
   		}
   		
   		// console.groupEnd();

@@ -1,3 +1,5 @@
+import { Generator } from "./lexeme_gen";
+
 class Lexeme {
     static name = "";
 
@@ -124,6 +126,8 @@ class Lexeme {
         return false;
     }
 }
+
+Lexeme.Generator = Generator;
 
 export { 
     Lexeme

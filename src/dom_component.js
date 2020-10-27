@@ -79,9 +79,10 @@ class DOMComponent extends HTMLElement {
 
 	_onDataSrcUpdate(ev) {
 		this._log("imp:",this.data_src.label,"- ","component data update signal received");
-		this.interface.dispatchMessage(new CustomEvent("datasrc-update",{
-        	detail: {uiVars: this.uiVars, data: this.data}
-        }));
+		this.interface.dispatchMessage("datasrc-update",{
+        	uiVars: this.uiVars, 
+        	data: this.data
+        });
 		this.render();
 	}
 
@@ -209,7 +210,7 @@ class DOMComponent extends HTMLElement {
 	    this.broker = this.data_src.eventTarget.addEventListener(label, ev => {
 	      _this._onDataSrcUpdate.call(_this, ev);
 	    }); 
-		// this.broker = PostOffice.registerBroker(this, label, (_msg)=>{
+		// this.broker = PostOffice.addGlobalListener(label, (_msg)=>{
 		// 	_this._onDataSrcUpdate.call(_this, _msg)
 		// });
 	}
@@ -228,14 +229,14 @@ class DOMComponent extends HTMLElement {
 		var _this = this;
 
 		for(var key in this.interfaces) {
-			PostOffice.registerBroker(this, `${this.uid}-${key}`, (_msg)=>{
+			PostOffice.addGlobalListener(`${this.uid}-${key}`, (_msg)=>{
 				var response = _this.interfaces[key](_msg);
 				PostOffice.broadcastMsg(`${_msg.sender}-${key}`, new Muffin.ComponentMsg({data: response}))
 			});
 		}
 		// var _this = this;
 		// this.defaultLifecycleInterfaces().map((_entry)=>{
-		// 	PostOffice.registerBroker(_this, _entry.label, (ev)=>{
+		// 	PostOffice.addGlobalListener( _entry.label, (ev)=>{
 		// 		_this._initComponentDataSrc.call(_this);
 		// 	});
 		// });
@@ -348,6 +349,12 @@ class DOMComponent extends HTMLElement {
 			}
 			this._events.onchange.push(_el.attributes["on-click"]);
 		});
+		this._renderedFrag.querySelectorAll("[on-scroll]").forEach((_el)=>{
+			_el.onscroll = function(ev) {
+				_this[_el.attributes["on-scroll"].value].call(_this, _el, ev);
+			}
+			this._events.onchange.push(_el.attributes["on-scroll"]);
+		});
 	}
 
 	_getChildCmps() {
@@ -412,9 +419,10 @@ class DOMComponent extends HTMLElement {
         		this.uiVars.state = { name: stateName, meta: targetState};
         		this.render();
 	        }
-	        this.interface.dispatchMessage(new CustomEvent("state-change",{
-	        	detail: {uiVars: this.uiVars, data: this.data}
-	        }))
+	        this.interface.dispatchMessage("state-change",{
+	        	uiVars: this.uiVars, 
+	        	data: this.data
+	        })
 	        this._log("imp:", "Switched State To - ", this.current_state);
         }
 

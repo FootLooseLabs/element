@@ -34,7 +34,6 @@
   "author": "footloose.io",
   "license": "ISC",
   "dependencies": {
-    "atom": "file:/home/a-ankur/footloose_labs/dev/toolchain/atom-os/dev/sdk/js",
     "commander": "^5.0.0",
     "kill-port": "^1.6.1",
     "localforage": "^1.7.3",
