@@ -40,6 +40,9 @@ class DataSource{   //returns null only if this.label is null
 	    this.label = label; //label has to be unique
 	    this.events = [];
 	    this.data = _cmp.schema || {};
+
+	    // console.debug("DataSource constructor::::::: - ", this.data);
+
 	    this._cmp = _cmp;
 	    this.comms = {
 	    	"init" : `${this.label}-datasrc-initialised`

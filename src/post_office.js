@@ -11,6 +11,42 @@ class PostOffice extends Object {
 		return PostOffice.sockets[name];
 	}
 
+	static createInterface(name,specs, override) {
+		if(PostOffice.sockets[name] && !override){
+			let err = `Error: Interface with name = ${name} already exists.`;
+			throw Error(err);
+		}
+		PostOffice.sockets[name] = new PostOffice.Socket(EventTarget, name);
+
+		if(specs){
+			PostOffice.sockets[name].addInterfaceSpec(specs);
+		}
+		return PostOffice.sockets[name];
+	}
+
+	static getOrCreateInterface(name,specs) {
+		if(PostOffice.sockets[name]){
+			return PostOffice.sockets[name];
+		}
+		PostOffice.sockets[name] = new PostOffice.Socket(EventTarget, name);
+
+		if(specs){
+			PostOffice.sockets[name].addInterfaceSpec(specs);
+		}
+		return PostOffice.sockets[name];
+	}
+
+	static publishToInterface(targetInterfaceAddr, msg) {
+		var [interfaceSocketName, interfaceOpLabel] = targetInterfaceAddr.split(":::");
+		console.debug("publishToInterface - ", interfaceSocketName, interfaceOpLabel, msg);
+		let targetSocket = PostOffice.sockets[interfaceSocketName];
+		if(!targetSocket){
+			let err = `Error: No such interface - ${interfaceSocketName}`;
+			throw Error(err);
+		}
+		targetSocket.publish(interfaceOpLabel, msg);
+	}
+
 	static _getRegistry() {
 		return PostOffice.registry;
 	}
@@ -90,16 +126,35 @@ PostOffice.sockets = {};
 PostOffice.registry = [];
 
 PostOffice.Socket = class PostOfficeSocket {
-	constructor(_constructor, name, url) {
-	  this.constructedFrom = _constructor || WebSocket;
-	  this.name = name;
-	  this.url = url;
-	  this.socket = new this.constructedFrom(url);
-	  this.defaultScope = new EventTarget();
-	  this.listeners = [];
-	  this.autoRetryOnClose = true;
-	  this.autoRetryInterval = 5;
-	  this.__init__();
+	constructor(_constructor, name, url, options) {
+		var options = options || {};
+		this.constructedFrom = _constructor || WebSocket;
+		this.name = name;
+		this.url = url;
+		this.socket = new this.constructedFrom(url);
+		this.defaultScope = new EventTarget();
+		this.listeners = [];
+		this.autoRetryOnClose = true;
+		this.autoRetryInterval = 5;
+		this.autoInitLexiconSubscriptions = options.autoInitLexiconSubscriptions || true;
+		this.__init__();
+	}
+
+	_initLexiconSubscriptions() {
+		// console.debug("PostOffice ---- _initLexiconSubscriptions : start ----------------", this.INTERFACE_SPEC);
+
+		if(this.INTERFACE_SPEC){
+			// console.debug("PostOffice ---- _initLexiconSubscriptions : initialising LEXICON Subscriptions ----------------");
+			for(var key in this.INTERFACE_SPEC){
+				if(this.INTERFACE_SPEC[key].schema && this.INTERFACE_SPEC[key].schema.subscribe){
+					// let _inflection = LEXICON.RORStateSubscriptionRequest.inflect({});
+			        // console.debug("-- SEnding MSg", _inflection.get())
+
+			        console.debug(`PostOffice:::_initLexiconSubscriptions publishing ${key}`);
+			        this.publish(`${key}`, {});
+				}
+			}
+		}
 	}
 
 	__init__() {
@@ -126,6 +181,12 @@ PostOffice.Socket = class PostOfficeSocket {
 	  	this.socket.addEventListener("error", (ev)=>{
 	  		_this._handleSocketErrorEv.call(_this, ev);
 	  	});
+
+		// if(this.autoInitLexiconSubscriptions){
+		// 	this._initLexiconSubscriptions();
+		// }
+
+	  	this.on = this.addListener;
 	}
 
 	_keepAlive() {
@@ -233,15 +294,82 @@ PostOffice.Socket = class PostOfficeSocket {
         }); 
     }
 
-	_msgToEv(_label,_msg) {
+    addInterfaceSpec(interfaceSpec) {
+    	// for(var k in lexiconMap) {
+    	// 	lexiconMap[k]	
+    	// }
+
+    	this.INTERFACE_SPEC = interfaceSpec;
+
+
+
+    	if(this.autoInitLexiconSubscriptions){
+    		// console.debug("PostOffice ---- _initLexiconSubscriptions __start___ - ", this.INTERFACE_SPEC);
+			this._initLexiconSubscriptions();
+		}
+    }
+
+    publish(_label, _msg) {
+    	console.debug(`DEBUG: PostOffice.Socket:::${this.name} Inflecting ${JSON.stringify(_msg)}`)
+
+    	var lexeme = this.INTERFACE_SPEC[_label];
+
+    	if(!lexeme){
+    		let err = `Error: No such lexeme --> ${_label}`;
+            throw Error(err);
+            return;
+    	}
+
+        try {
+            var inflection = lexeme.inflect(_msg);
+            if(!inflection){
+            	let err = `Error: Invalid msg form for ${_label} --> ${inflection}`;
+                console.error(err);
+                throw Error(err)
+                return;
+            }
+        } catch (e) {
+            console.error("Error:", "error inflecting msg lexeme: ", e);
+            throw Error(e)
+            return;
+        }
+
+        console.debug(`DEBUG: PostOffice.Socket:::${this.name} Publishing ${inflection.stringify()}`);
+
+        let ev = this._msgToEv(_label, inflection.get());
+		this.defaultScope.dispatchEvent(ev);
+    }
+
+	_msgToEv(_label,_msg, lexemeName) {
 		let label = _label || "anonymous-event";
+		if(lexemeName){
+			let lexeme = this.LEXICON[lexemeName];
+			if(!lexeme){
+        		let err = `Error: invalid lexeme provided --> ${lexemeName}`;
+	            throw Error(err);
+        	}
+        	var inflection;
+        	try {
+	            inflection = lexeme.inflect(_msg);
+	            if(!inflection){
+	            	let err = `Error: Invalid msg form for ${lexemeName} --> ${inflection}`;
+	                console.error(err);
+	                throw Error(err);
+	            }
+	        }catch (e) {
+	            console.error("Error:", "error inflecting msg lexeme: ", e);
+	            throw Error(e);
+	        }
+
+	        _msg = inflection.get();
+		}
 		return new CustomEvent(_label, {
 			detail: _msg
 		});
 	}
 
-	dispatchMessage(label, msg){
-		let ev = this._msgToEv(label, msg);
+	dispatchMessage(label, msg, lexemeName){
+		let ev = this._msgToEv(label, msg, lexemeName);
 		this.defaultScope.dispatchEvent(ev);
 	}
 

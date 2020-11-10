@@ -38,7 +38,13 @@ class DOMComponent extends HTMLElement {
 		this.domElName = this.constructor.domElName || opt.domElName;
 		this.interfaces = this.constructor.interfaces || opt.interfaces;
 		this.stateSpace = this.constructor.stateSpace || opt.stateSpace;
+		this.LEXICON = this.constructor.LEXICON || {};
+		// this.interfaceSpecs = this.constructor.interfaceSpecs || {};
+		this.advertiseAs = this.constructor.advertiseAs;
+
 		this.transitionSpace = {};
+
+		// this.autoInitLexiconSubscriptions = this.constructor.autoInitLexiconSubscriptions || true;
 
 		this.uid = this.uid || randomString(8);
 		this.composedScope = {};
@@ -64,8 +70,27 @@ class DOMComponent extends HTMLElement {
 		});
 	}
 
+	_setupAdvertisedInterface() {
+		if(this.advertiseAs){
+			this.advertisedInterface = PostOffice.getOrCreateInterface(this.advertiseAs);
+			for(var key in this.LEXICON){
+				this.advertisedInterface.on(`${key}`,(inflectedMsg)=>{
+		            this[key].call(this, inflectedMsg);
+		        });
+			}
+			this.advertisedInterface.addInterfaceSpec(this.LEXICON);
+		}
+	}
+
+
 	_preInit() {
 		this._setupDomContentLoadedCallback();
+
+		this._setupAdvertisedInterface();
+
+		// if(this.autoInitLexiconSubscriptions){
+		// 	this._initLexiconSubscriptions();
+		// }
 	}
 
 	connectedCallback() {
@@ -118,6 +143,7 @@ class DOMComponent extends HTMLElement {
 		this._initLifecycle(opt);
 
 		this._log("imp:", "initialised");
+
 
 		console.groupEnd();
 	}
@@ -298,7 +324,7 @@ class DOMComponent extends HTMLElement {
 				this._processedData = this.processData.call(this, newData);
 				return this._processedData;
 			}catch(e){
-				this._log("imp:","could not post process CMP data - ", e);
+				this._log("imp:","could not post process CMP data - ", e, "data = ", JSON.stringify(newData), " & schema = ", JSON.stringify(this.schema), " & this.data_src.data = ", JSON.stringify(this.data_src.data));
 				return newData;
 			}
 		}
@@ -393,7 +419,7 @@ class DOMComponent extends HTMLElement {
   	}
 
   	// advertiseInterface() {
-  	// 	PostOffice.addSocket
+  	// 	this.advertisedInterface = PostOffice.getOrCreateInterface(this.ad, this.constructor.interfaceSpecs);
   	// }
 
   	switchState(stateName) {
@@ -627,7 +653,7 @@ class DOMComponent extends HTMLElement {
 	    try{
 	      var _rendered = this.markupFunc(this.data, this.uid, this.uiVars, this.routeVars, this.constructor); 
 	    }catch(e){
-	      this._log("imp:", "error in rendering component - ", e);
+	      console.error(this._logPrefix, "error in rendering component - ", e);
 	      return;
 	    }
 	    // this.shadow.innerHTML = _rendered;
