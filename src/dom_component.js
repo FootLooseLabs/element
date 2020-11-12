@@ -75,7 +75,11 @@ class DOMComponent extends HTMLElement {
 			this.advertisedInterface = PostOffice.getOrCreateInterface(this.advertiseAs);
 			for(var key in this.LEXICON){
 				this.advertisedInterface.on(`${key}`,(inflectedMsg)=>{
-		            this[key].call(this, inflectedMsg);
+					if(this[key]){
+		            	this[key].call(this, inflectedMsg);
+		            }else{
+		            	console.warn(`${this._logPrefix} No operation = ${key} availble in the component but defined in lexicon`);
+		            }
 		        });
 			}
 			this.advertisedInterface.addInterfaceSpec(this.LEXICON);

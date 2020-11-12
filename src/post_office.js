@@ -146,12 +146,16 @@ PostOffice.Socket = class PostOfficeSocket {
 		if(this.INTERFACE_SPEC){
 			// console.debug("PostOffice ---- _initLexiconSubscriptions : initialising LEXICON Subscriptions ----------------");
 			for(var key in this.INTERFACE_SPEC){
-				if(this.INTERFACE_SPEC[key].schema && this.INTERFACE_SPEC[key].schema.subscribe){
-					// let _inflection = LEXICON.RORStateSubscriptionRequest.inflect({});
-			        // console.debug("-- SEnding MSg", _inflection.get())
+				if(this.INTERFACE_SPEC[key]){
+					if(this.INTERFACE_SPEC[key].schema && this.INTERFACE_SPEC[key].schema.subscribe){
+						// let _inflection = LEXICON.RORStateSubscriptionRequest.inflect({});
+				        // console.debug("-- SEnding MSg", _inflection.get())
 
-			        console.debug(`PostOffice:::_initLexiconSubscriptions publishing ${key}`);
-			        this.publish(`${key}`, {});
+				        console.debug(`PostOffice:::_initLexiconSubscriptions publishing ${key}`);
+				        this.publish(`${key}`, {});
+					}
+				}else{
+					console.warn(`PostOffice:::${this.name}: _initLexiconSubscriptions Key - ${key} in Spec has undefined value. (No lexeme associated with the key).`);
 				}
 			}
 		}
