@@ -655,7 +655,7 @@ class DOMComponent extends HTMLElement {
 	    var _this = this;
 
 	    try{
-	      var _rendered = this.markupFunc(this.data, this.uid, this.uiVars, this.routeVars, this.constructor); 
+	      var _rendered = this.markupFunc.call(this, this.data, this.uid, this.uiVars, this.routeVars, this.constructor); 
 	    }catch(e){
 	      console.error(this._logPrefix, "error in rendering component - ", e);
 	      return;
