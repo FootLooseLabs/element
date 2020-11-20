@@ -238,7 +238,7 @@ PostOffice.Socket = class PostOfficeSocket {
   			console.debug(`PostOffice.Socket:::${this.name} retrying connection in ${this.autoRetryInterval}s`);
   			setTimeout(()=>{
   				console.debug(`PostOffice.Socket:::${this.name} attempting to connect again`);
-  				this.socket = new this.constructedFrom();
+  				this.socket = new this.constructedFrom(this.url);
   				this.__init__();
   			}, this.autoRetryInterval*1000);
   			return;
