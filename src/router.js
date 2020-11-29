@@ -196,24 +196,20 @@ Router.prototype._closeAllActiveRoutesInScope = function(scope) {
 Router.prototype._onBeforeLoad = function(routeObj){
 
 	if(routeObj.socketName && PostOffice.sockets[routeObj.socketName]){
-		PostOffice.sockets[routeObj.socketName].dispatchMessage(new CustomEvent("onBeforeLoad",{
-			detail: {
-				name: routeObj.name,
-		        url: routeObj.url,
-		        params: routeObj.params,
-		        active: routeObj.active
-		    }
-		}));
-	}
-
-	this._socket.dispatchMessage(new CustomEvent("onBeforeLoad",{
-		detail: {
+		PostOffice.sockets[routeObj.socketName].dispatchMessage("onBeforeLoad",{
 			name: routeObj.name,
 	        url: routeObj.url,
 	        params: routeObj.params,
 	        active: routeObj.active
-	    }
-	}));
+		});
+	}
+
+	this._socket.dispatchMessage("onBeforeLoad",{
+		name: routeObj.name,
+        url: routeObj.url,
+        params: routeObj.params,
+        active: routeObj.active
+    });
 
 	if(routeObj.onBeforeLoad){
 		routeObj.onBeforeLoad.call(this, routeObj);

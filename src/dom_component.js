@@ -301,8 +301,8 @@ class DOMComponent extends HTMLElement {
 		// 		_this.onBeforeRouteLoad();
 		// 	}
 		// });
-		this.router._socket.addListener("onBeforeLoad",(ev)=>{ //this.router._socket - enables passing routeVars without specifying each route level config (socketName)  
-			_this.routeVars = ev.detail;	//all routes with this router will get this routeVars unlike the commented approach above.
+		this.router._socket.on("onBeforeLoad",(msg)=>{ //this.router._socket - enables passing routeVars without specifying each route level config (socketName)  
+			_this.routeVars = msg;	//all routes with this router will get this routeVars unlike the commented approach above.
 			if(_this.onBeforeRouteLoad){
 				_this.onBeforeRouteLoad();
 			}
