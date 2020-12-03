@@ -338,7 +338,7 @@ PostOffice.Socket = class PostOfficeSocket {
             return;
         }
 
-        console.debug(`DEBUG: PostOffice.Socket:::${this.name} Publishing ${inflection.stringify()}`);
+        console.debug(`DEBUG: PostOffice.Socket:::${this.name}:::${_label} Publishing ${inflection.stringify()}`);
 
         let ev = this._msgToEv(_label, inflection.get());
 		this.defaultScope.dispatchEvent(ev);
@@ -374,21 +374,21 @@ PostOffice.Socket = class PostOfficeSocket {
 
 	dispatchMessage(label, msg, lexemeName){
 		let ev = this._msgToEv(label, msg, lexemeName);
-		this.defaultScope.dispatchEvent(ev);
+		this.dispatchEvent(ev);
 	}
 
 	broadcastMsg (label, msg, _scope){
 		if(!label){return;}
-		var _scope = _scope || this.defaultScope;
 		var evnt = new CustomEvent(label, {
 		    detail: msg
 		});
-		_scope.dispatchEvent(evnt);
+		this.dispatchEvent(evnt);
 	}
 
-	dispatchEvent (msgEv){ //for forward compat
+	dispatchEvent (msgEv, _scope){ //for forward compat
+		var _scope = _scope || this.defaultScope;
 		this.defaultScope.dispatchEvent(msgEv);
-		console.log("imp:","PostOfficeSocket: ", this.name, " - dispatched message = ", msgEv);
+		console.log("imp:","PostOfficeSocket: ", this.name, " - dispatched event = ", msgEv.type, ", with payload = ", msgEv.detail);
 	}
 
 	addListener(label, cb) {
