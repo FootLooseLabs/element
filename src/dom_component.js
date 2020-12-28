@@ -653,7 +653,7 @@ class DOMComponent extends HTMLElement {
     }
 
 
-  	render() { //called from either - 1.) datasrcupdate, 2.) datasrc is null after init, 3.) onattributechange, 4.) stateChange
+  	async render() { //called from either - 1.) datasrcupdate, 2.) datasrc is null after init, 3.) onattributechange, 4.) stateChange
 	    this._log("----------rendering component start---------------");
 	    var _this = this;
 
