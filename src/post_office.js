@@ -6,8 +6,8 @@ class PostOffice extends Object {
 
 	// static defaultScope = PostOffice.addSocket(EventTarget,"global");
 
-	static addSocket(_constructor, name, _url) {
-		PostOffice.sockets[name] = new PostOffice.Socket(_constructor, name, _url);
+	static addSocket(_constructor, name, _url, options) {
+		PostOffice.sockets[name] = new PostOffice.Socket(_constructor, name, _url, options);
 		return PostOffice.sockets[name];
 	}
 
