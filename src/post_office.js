@@ -134,8 +134,8 @@ PostOffice.Socket = class PostOfficeSocket {
 		this.socket = new this.constructedFrom(url);
 		this.defaultScope = new EventTarget();
 		this.listeners = [];
-		this.autoRetryOnClose = true;
-		this.autoRetryInterval = 5;
+		this.autoRetryOnClose = options.autoRetryOnClose || true;
+		this.autoRetryInterval = options.autoRetryInterval || 5;
 		this.autoInitLexiconSubscriptions = options.autoInitLexiconSubscriptions || true;
 		this.__init__();
 	}
