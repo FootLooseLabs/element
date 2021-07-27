@@ -7,6 +7,7 @@ function Router(options){
 
 	this.routes = [];
 	this.toggleClass = options.toggleClass || '_active';
+	this.routeDelimiter = options.routeDelimiter || "?";
 	this.containment = document;
 	this.__init__();
 }
@@ -269,10 +270,10 @@ Router.prototype.updateState = function(routeObj){
 
 	if(this.isSubRoute(routeObj)){
 		var ancesstorRouteNames = this.getRouteAncesstors(routeObj.name).routes;
-		routeObj.url = "?" + ancesstorRouteNames.concat(routeObj.name).join("/");
+		routeObj.url = this.routeDelimiter + ancesstorRouteNames.concat(routeObj.name).join("/");
 		_this._log("updating historyUrl for sub-route == ", routeObj.url);
 	}else{
-		routeObj.url = `?${routeObj.name}`;
+		routeObj.url = `${this.routeDelimiter}${routeObj.name}`;
 		_this._log("updating historyUrl for route: ", routeObj.url);
 	}
 

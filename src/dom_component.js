@@ -388,6 +388,13 @@ class DOMComponent extends HTMLElement {
 			}
 			this._events.onchange.push(_el.attributes["on-scroll"]);
 		});
+
+		this._renderedFrag.querySelectorAll("[on-keyup]").forEach((_el)=>{
+			_el.onkeyup = function(ev) {
+				_this[_el.attributes["on-keyup"].value].call(_this, _el, ev);
+			}
+			this._events.onchange.push(_el.attributes["on-keyup"]);
+		});
 	}
 
 	_getChildCmps() {
