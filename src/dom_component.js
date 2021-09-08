@@ -361,8 +361,12 @@ class DOMComponent extends HTMLElement {
 		this._events = {
 			"onchange": [],
 			"onclick": [],
-			"oninput": []
+			"oninput": [],
+			"onscroll": [],
+			"onkeyup": [],
+			"onload": []
 		};
+
 		this._renderedFrag.querySelectorAll("[on-change]").forEach((_el)=>{
 			_el.onchange = function(ev) {
 				// _el.attributes["on-change"].value.call(_this);
@@ -374,26 +378,33 @@ class DOMComponent extends HTMLElement {
 			_el.oninput = function(ev) {
 				_this[_el.attributes["on-input"].value].call(_this, _el, ev);
 			}
-			this._events.onchange.push(_el.attributes["on-input"]);
+			this._events.oninput.push(_el.attributes["on-input"]);
 		});
 		this._renderedFrag.querySelectorAll("[on-click]").forEach((_el)=>{
 			_el.onclick = function(ev) {
 				_this[_el.attributes["on-click"].value].call(_this, _el, ev);
 			}
-			this._events.onchange.push(_el.attributes["on-click"]);
+			this._events.onclick.push(_el.attributes["on-click"]);
 		});
 		this._renderedFrag.querySelectorAll("[on-scroll]").forEach((_el)=>{
 			_el.onscroll = function(ev) {
 				_this[_el.attributes["on-scroll"].value].call(_this, _el, ev);
 			}
-			this._events.onchange.push(_el.attributes["on-scroll"]);
+			this._events.onscroll.push(_el.attributes["on-scroll"]);
 		});
 
 		this._renderedFrag.querySelectorAll("[on-keyup]").forEach((_el)=>{
 			_el.onkeyup = function(ev) {
 				_this[_el.attributes["on-keyup"].value].call(_this, _el, ev);
 			}
-			this._events.onchange.push(_el.attributes["on-keyup"]);
+			this._events.onkeyup.push(_el.attributes["on-keyup"]);
+		});
+		
+		this._renderedFrag.querySelectorAll("[on-load]").forEach((_el)=>{
+			_el.onload = function(ev) {
+				_this[_el.attributes["on-load"].value].call(_this, _el, ev);
+			}
+			this._events.onload.push(_el.attributes["on-load"]);
 		});
 	}
 
