@@ -347,7 +347,9 @@ Router.prototype.go = function(route_name, url_params){
 
 Router.prototype.getOrCreateRoute = function(route_name, url_params){
 	var routeObj = this.getRoute(route_name);
-	if(!routeObj){
+	if(routeObj){
+		routeObj.params = {...routeObj.params, ...url_params}
+	}else{
 		routeObj = {
 			name: route_name,
 			params: url_params
