@@ -174,7 +174,7 @@ class DOMComponent extends HTMLElement {
 	    	if(this.attributes.childscope){
 	    		let childscopeKey = this.attributes.childscope.value;
 		      	this.getParent().composedScope[childscopeKey] = this;
-		      	this.getParent().interface.dispatchMessage("child-composed", {key: childscopeKey, instance: this});
+		      	this.getParent().interface.dispatchMessage("child-composed", childscopeKey);
 		    }
 	   	}
 	   	
