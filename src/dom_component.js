@@ -408,6 +408,13 @@ class DOMComponent extends HTMLElement {
 			}
 			this._events.onload.push(_el.attributes["on-load"]);
 		});
+
+		this._renderedFrag.querySelectorAll("[on-contextmenu]").forEach((_el)=>{
+			_el.onclick = function(ev) {
+				_this[_el.attributes["on-contextmenu"].value].call(_this, _el, ev);
+			}
+			this._events.onclick.push(_el.attributes["on-contextmenu"]);
+		});
 	}
 
 	_getChildCmps() {
