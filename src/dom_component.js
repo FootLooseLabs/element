@@ -366,7 +366,8 @@ class DOMComponent extends HTMLElement {
 			"oninput": [],
 			"onscroll": [],
 			"onkeyup": [],
-			"onload": []
+			"onload": [],
+			"contextmenu": []
 		};
 
 		this._renderedFrag.querySelectorAll("[on-change]").forEach((_el)=>{
