@@ -411,7 +411,8 @@ class DOMComponent extends HTMLElement {
 		});
 
 		this._renderedFrag.querySelectorAll("[on-contextmenu]").forEach((_el)=>{
-			_el.contextmenu = function(ev) {
+			_el.oncontextmenu = function(ev) {
+				ev.preventDefault();
 				_this[_el.attributes["on-contextmenu"].value].call(_this, _el, ev);
 			}
 			this._events.contextmenu.push(_el.attributes["on-contextmenu"]);
