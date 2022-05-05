@@ -165,8 +165,13 @@ class DOMComponent extends HTMLElement {
 	//   	this.childCmps.push(_instance);
 	// }
 
-	_composeAncesstry() {
-		DOMComponentRegistry.update(this);
+	async _composeAncesstry() {
+
+		try{
+			await DOMComponentRegistry.update(this);
+		}catch(e){
+			console.warn(`WARN: Failed to compose ancesstry of ${this.domElName} - `, e);
+		}
 
 	  	if(this.attributes.parent){
 	    	this.parent = this.attributes.parent.value;

@@ -61,8 +61,20 @@ class DOMComponentRegistry {
 		// }
 	}
 
-	static update(instance) {
+	static async update(instance) {
 		var _entry = DOMComponentRegistry.find(instance.domElName);
+
+		if(!_entry){ //wait for 1 second. //for root components registry might not be available immediately during load.
+	    	 _entry = await (new Promise((resolve, reject)=>{
+	    	 	setTimeout(()=>{
+		    	 	return resolve(DOMComponentRegistry.find.call(this, instance.domElName));
+		    	},1000);
+		    	setTimeout(()=>{
+		    	 	return reject(null);
+		    	},1500);
+	    	 }))
+	    }
+
 		if(_entry){
 			_entry.instances.push(instance);
 		}
