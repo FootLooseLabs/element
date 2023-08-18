@@ -173,15 +173,23 @@ class DOMComponent extends HTMLElement {
 			console.warn(`WARN: Failed to compose ancesstry of ${this.domElName} - `, e);
 		}
 
-	  	if(this.attributes.parent){
-	    	this.parent = this.attributes.parent.value;
+	  	if (this.attributes.parent) {
+	      this.parent = this.attributes.parent.value;
 
-	    	if(this.attributes.childscope){
-	    		let childscopeKey = this.attributes.childscope.value;
-		      	this.getParent().composedScope[childscopeKey] = this;
-		      	this.getParent().interface.dispatchMessage("child-composed", childscopeKey);
-		    }
-	   	}
+	      if (this.attributes.childscope) {
+	        let childscopeKey = this.attributes.childscope.value;
+	        try{
+	        	this.getParent().composedScope[childscopeKey] = this;
+	        	this.getParent().interface.dispatchMessage("child-composed", childscopeKey);
+	        }catch(e){
+	        	setTimeout((()=>{ (()=>{
+	    			let childscopeKey = this.attributes.childscope.value;
+	    		  	this.getParent().composedScope[childscopeKey] = this;
+		      		this.getParent().interface.dispatchMessage("child-composed", childscopeKey);
+    			}).call(this)}), 1000)
+	        }
+	      }
+	    }
 	   	
 	   	console.log("composed ancesstry ", this.domElName, ", ", this.uid);
 	}
