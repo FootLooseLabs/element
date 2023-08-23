@@ -67,7 +67,7 @@ Router.prototype.getCurrentRouteParams = function(){
 }
 
 Router.prototype._getRouteNameFromWindowLocation = function() {
-	var routePath = window.location.search.split("?").pop().split("&").shift() || this.getDefaultRoute().name;
+	var routePath = window.location.href.split(this.routeDelimiter).pop().split("&").shift() || this.getDefaultRoute().name;
 	return routePath;
 }
 
