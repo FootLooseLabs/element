@@ -162,7 +162,7 @@ Router.prototype.onStateChange = function(ev){
 
 
 Router.prototype.getRouteEl = function(routeName){
-	return this.containment.querySelector('[route='+routeName+']');
+	return this.containment.querySelector(`[route='${routeName}']`);
 }
 
 
