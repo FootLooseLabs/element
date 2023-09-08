@@ -66,10 +66,11 @@ Router.prototype.getCurrentRouteParams = function(){
 	}
 }
 
-Router.prototype._getRouteNameFromWindowLocation = function() {
-	var routePath = window.location.href.split(this.routeDelimiter).pop().split("&").shift() || this.getDefaultRoute().name;
-	return routePath;
-}
+Router.prototype._getRouteNameFromWindowLocation = function () {
+	let _pathname = window.location.href.split(window.location.origin).pop(); //NOTE - such that this is similar to pathName when routeDelimiter != /
+  	let routePath = _pathname.split(this.routeDelimiter).slice(1).join(this.routeDelimiter) || this.getDefaultRoute().name;
+  	return routePath;
+};
 
 Router.prototype._getRouteNameFromHistoryState = function() {
 	return window.history.state.name;
