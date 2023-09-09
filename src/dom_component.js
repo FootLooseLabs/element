@@ -1,4 +1,4 @@
-import { randomString } from "./utils.js";
+import { randomString, deepCountChildElements } from "./utils.js";
 import { DOMComponentRegistry } from "./dom_component_registry.js";
 import { PostOffice } from "./post_office.js";
 import { DataSource } from "./data_source.js";
@@ -548,6 +548,10 @@ class DOMComponent extends HTMLElement {
 	  	if(node1.childElementCount != node2.childElementCount) {
 	  		return false;
 	  	}
+
+	  	if (deepCountChildElements(node1) != deepCountChildElements(node2)) {
+	      return false;
+	    } //NOTE - this fixes the occasional addtion requirement of extra divs (further NOTE - impact only tested in app.wity so far) 
 
 	  	var isEqual = true;
 	  	for(var idx in Array.from(node1.children)){

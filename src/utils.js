@@ -18,6 +18,22 @@ var triggerCustomEvent = function(target, eventName, details){
 }
 
 
+function deepCountChildElements(element) {
+  var count = 0;
+
+  function __traverse(node) {
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        count++;
+        for (var i = 0; i < node.childNodes.length; i++) {
+          __traverse(node.childNodes[i]);
+        }
+      }
+  }
+
+  __traverse(element);
+  return count;
+}
+
 function stringToHTMLFrag(strHTML) {   //output diff from stringToDocFrag: that always returns the full html page structure (with head & body)
     var temp = document.createElement('template');
     temp.innerHTML = strHTML;
@@ -166,5 +182,6 @@ export {
   triggerCustomEvent,
   stringToHTMLFrag,
   stringToDocFrag,
-  send_ajax
+  send_ajax,
+  deepCountChildElements
 }
