@@ -166,7 +166,7 @@ class DOMComponent extends HTMLElement {
 	// }
 
 	async _composeAncesstry() {
-
+		if(this._ancesstryComposed === true){return;}
 		try{
 			await DOMComponentRegistry.update(this);
 		}catch(e){
@@ -180,11 +180,13 @@ class DOMComponent extends HTMLElement {
 	        let childscopeKey = this.attributes.childscope.value;
 	        try{
 	        	this.getParent().composedScope[childscopeKey] = this;
+	        	this._ancesstryComposed = true;
 	        	this.getParent().interface.dispatchMessage("child-composed", childscopeKey);
 	        }catch(e){
 	        	setTimeout((()=>{ (()=>{
 	    			let childscopeKey = this.attributes.childscope.value;
 	    		  	this.getParent().composedScope[childscopeKey] = this;
+	    		  	this._ancesstryComposed = true;
 		      		this.getParent().interface.dispatchMessage("child-composed", childscopeKey);
     			}).call(this)}), 1000)
 	        }
@@ -656,10 +658,23 @@ class DOMComponent extends HTMLElement {
         }
 	}
 
-	__patchDOMCompletely(cmp_dom_node) {
-		this.__processConditionalMarkup();
+
+	__patchDOMCompletely(cmp_dom_node, indom=false) {
+	    this.__processConditionalMarkup();
+
+	    if(indom == true){
+	    	// console.warn("INFO: _patchDomRouteToken ======= ", this._patchDomRouteToken);
+	    	if(location.href == this._patchDomRouteToken){
+	    		this._processChildCmps();
+	    	}else{
+	    		
+	    	}
+	    }
+
 	    cmp_dom_node.replaceWith(this._renderedFrag);
 	}
+
+
 
     __patchDOM() {
     	if(this.attributes.stop){
@@ -687,7 +702,7 @@ class DOMComponent extends HTMLElement {
 		      	if(this.__isDOMTreeEqual(cmp_dom_node, _renderedFragRootNode)){
 		      		this.__findAndReplaceUnequalNodes(_renderedFragRootNode, cmp_dom_node);	
 		      	}else{
-		      		this.__patchDOMCompletely(cmp_dom_node);
+		      		this.__patchDOMCompletely(cmp_dom_node, true);
 		      	}
 		    }
 		    else{ 
@@ -696,6 +711,9 @@ class DOMComponent extends HTMLElement {
     	}catch(e){
     		this._log("imp:","(ERROR) - component rendering failed with the following error - \n", e);
     	}
+
+    	this._patchDomRouteToken = location.href;
+
     }
 
 
