@@ -2,6 +2,8 @@
 
 A lightweight, vanilla JavaScript framework for building modern User Interfaces with message-driven component-based architecture and flexible data management.
 
+> **Note**: This core library is extended by [atom-websdk](https://github.com/FootLooseLabs/atom-websdk) which is **recommended for use in projects** as it contains enhancements and many abstractions over this core library.
+
 ## Overview
 
 Element Framework (internally called "Muffin") is a minimalistic frontend framework that provides:
@@ -69,8 +71,9 @@ class ContactCard extends Muffin.DOMComponent {
         `
     }
 
-    handleEdit(event) {
+    handleEdit(srcEl, event) {
         console.log("Editing contact:", this.data.name);
+        console.log("Source element:", srcEl);
         // Handle edit logic
     }
 }
@@ -114,18 +117,18 @@ Client-side routing for single-page applications with nested route support.
 ```html
 <div route="home">
     <h1>Home Page</h1>
-    <button onclick="_router.go('about')">About</button>
+    <button onclick="Muffin._router.go('about')">About</button>
 </div>
 
 <div route="about">
     <h1>About Page</h1>
-    <button onclick="_router.go('home')">Home</button>
+    <button onclick="Muffin._router.go('home')">Home</button>
 </div>
 
 <script>
-    var _router = new Router();
+    Muffin._router = new Muffin.Router();
     document.addEventListener('DOMContentLoaded', () => {
-        _router.go('home');
+        Muffin._router.go('home');
     });
 </script>
 ```
@@ -210,26 +213,26 @@ class InteractiveCard extends Muffin.DOMComponent {
         `
     }
 
-    increment(event) {
+    increment(srcEl, event) {
         this.data.count++;
         this.render();
     }
-
-    decrement(event) {
+    
+    decrement(srcEl, event) {
         this.data.count--;
         this.render();
     }
-
-    updateTitle(event) {
+    
+    updateTitle(srcEl, event) {
         this.data.title = event.target.value;
     }
-
-    highlight(event) {
-        event.target.style.backgroundColor = '#f0f0f0';
+    
+    highlight(srcEl, event) {
+        srcEl.style.backgroundColor = '#f0f0f0';
     }
-
-    unhighlight(event) {
-        event.target.style.backgroundColor = '';
+    
+    unhighlight(srcEl, event) {
+        srcEl.style.backgroundColor = '';
     }
 }
 ```
