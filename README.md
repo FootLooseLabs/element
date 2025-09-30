@@ -77,8 +77,6 @@ class ContactCard extends Muffin.DOMComponent {
         // Handle edit logic
     }
 }
-
-customElements.define(ContactCard.domElName, ContactCard)
 ```
 
 **Key Properties:**
