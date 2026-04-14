@@ -51,7 +51,9 @@ const StateMachineMethods = {
         const targetState = this.stateSpace[stateName];
         if (!targetState) { return; }
         this.current_state = stateName;
-        this.uiVars.state = { name: stateName, meta: targetState };
+        // NOTE: intentionally does NOT set uiVars.state here.
+        // uiVars.state is set only in explicit switchState transitions.
+        // switchToIdleState is a silent reset — matches v2 behaviour.
         return this.current_state;
     }
 };
