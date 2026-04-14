@@ -3,7 +3,7 @@ import { PostOffice } from "./post_office.js";
 // import localforage from "/node_modules/localforage/src/localforage.js";
 import { DefaultConfig } from "./config.js";
 
-import "localforage";
+import localforage from "localforage";
 
 
 localforage.config({

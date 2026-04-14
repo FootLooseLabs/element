@@ -1,5 +1,5 @@
 import { PostOffice } from "./post_office.js";
-import "localforage";
+import localforage from "localforage";
 
 /**
  * Creates a named reactive store. Multiple components can subscribe by reference.
