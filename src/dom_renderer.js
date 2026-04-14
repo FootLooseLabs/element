@@ -39,6 +39,7 @@ const DOMRendererMethods = {
     // ─── Render scheduling ───────────────────────────────────────────────────
 
     _scheduleRender() {
+        if (!this.markupFunc) return;
         if (this._renderScheduled) return;
         this._renderScheduled = true;
         queueMicrotask(() => {
