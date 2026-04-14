@@ -1,43 +1,39 @@
 {
-  "name": "muffin",
+  "name": "@muffin/element",
   "version": "0.9.2",
-  "description": "lightweight & implementation-flexible spa frontend development framework",
-  "main": "index.js",
+  "description": "Lightweight, composable frontend framework. Web Components based.",
+  "main": "src/main.js",
+  "module": "dist/element.esm.js",
+  "browser": "dist/element.min.js",
+  "exports": {
+    ".": {
+      "import": "./src/main.js",
+      "browser": "./dist/element.min.js"
+    }
+  },
   "bin": {
     "muf": "./cli/main.js"
   },
-  "devDependencies": {
-    "@babel/cli": "^7.1.2",
-    "@babel/core": "^7.1.2",
-    "babel-cli": "^6.26.0",
-    "babel-plugin-transform-class-properties": "^6.24.1",
-    "rollup": "^0.66.6",
-    "rollup-plugin-babel": "^4.4.0",
-    "rollup-plugin-commonjs": "^9.2.0",
-    "rollup-plugin-license": "^2.0.0",
-    "rollup-plugin-node-resolve": "^3.4.0",
-    "rollup-plugin-replace": "^2.1.0",
-    "rollup-plugin-uglify": "^6.0.0"
-  },
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "./node_modules/.bin/rollup -c"
+    "build": "NODE_ENV=production rollup -c",
+    "build:dev": "rollup -c"
   },
-  "keywords": [
-    "frontend",
-    "webapp",
-    "spa",
-    "mvc",
-    "javascript",
-    "vanilla"
-  ],
+  "keywords": ["frontend", "web-components", "spa", "vanilla"],
   "author": "footloose.io",
-  "license": "ISC",
+  "license": "Copyright © Footloose Labs INC.",
   "dependencies": {
-    "commander": "^5.0.0",
-    "kill-port": "^1.6.1",
-    "localforage": "^1.7.3",
-    "randexp": "^0.5.3",
-    "require-all": "^3.0.0"
+    "localforage": "^1.10.0"
+  },
+  "optionalDependencies": {
+    "commander": "^12.0.0",
+    "kill-port": "^2.0.1"
+  },
+  "devDependencies": {
+    "rollup": "^4.0.0",
+    "@rollup/plugin-node-resolve": "^15.0.0",
+    "@rollup/plugin-commonjs": "^25.0.0",
+    "@rollup/plugin-terser": "^0.4.0",
+    "@rollup/plugin-replace": "^5.0.0"
   }
 }

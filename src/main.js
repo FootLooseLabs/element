@@ -6,33 +6,35 @@ import { DOMComponentRegistry, DataSource, PostOffice, DOMComponent } from "./do
 import { Router } from "./router.js";
 import { IncludeFrag } from "./include.js";
 import { Introspector } from "./introspector.js";
-
-// Object.prototype.register = function(){ 
-// 	if(!(this.prototype instanceof DOMComponent)){return;}
-// 	DOMComponentRegistry.register(this);
-// }
-
-window.Muffin = {};
+import { createStore } from "./store.js";
 
 Logger.start();
 DOMComponentRegistry.start();
 Introspector.start();
 
+DOMComponentRegistry.register(DataChannel);
+DOMComponentRegistry.register(IncludeFrag);
 
-DOMComponentRegistry.register(DataChannel)
-DOMComponentRegistry.register(IncludeFrag)
+// Single global namespace — no bare globals polluting window
+window.Muffin = {
+    Lexeme,
+    Router,
+    PostOffice,
+    DOMComponentRegistry,
+    DataSource,
+    DOMComponent,
+    Introspector,
+    createStore
+};
 
-window.Muffin.Lexeme = Lexeme;
-window.Muffin.Router = Router;
-window.Muffin.PostOffice = PostOffice;
-window.Muffin.DOMComponentRegistry = DOMComponentRegistry;
-window.Muffin.DataSource = DataSource;
-window.Muffin.DOMComponent = DOMComponent;
-window.Muffin.Introspector = Introspector;
-
-window.Router = Router;
-window.PostOffice = PostOffice;
-window.DOMComponentRegistry = DOMComponentRegistry;
-window.DataSource = DataSource;
-window.DOMComponent = DOMComponent;
-// window.IncludeFrag = IncludeFrag;
+// Named exports for ES module / bundler usage (atom-websdk, Vite projects)
+export {
+    Lexeme,
+    Router,
+    PostOffice,
+    DOMComponentRegistry,
+    DataSource,
+    DOMComponent,
+    Introspector,
+    createStore
+};

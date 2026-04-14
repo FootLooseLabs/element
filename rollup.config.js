@@ -1,43 +1,47 @@
-import babel from 'rollup-plugin-babel';
-import resolve from 'rollup-plugin-node-resolve';
-import replace from 'rollup-plugin-replace';
-import {uglify}  from "rollup-plugin-uglify";
-const path = require('path');
-const license = require('rollup-plugin-license');
+import resolve from '@rollup/plugin-node-resolve';
+import commonjs from '@rollup/plugin-commonjs';
+import terser from '@rollup/plugin-terser';
+import replace from '@rollup/plugin-replace';
 
+const isProd = process.env.NODE_ENV === 'production';
 
-export default {
-  entry: 'src/main.js',
-  dest: 'dist/muffin.min.js',
-  format: 'iife',
-  sourceMap: 'inline',
-  plugins: [
-    babel(
-      {
-        "plugins": [
-          ["transform-class-properties", { "spec": true }]
-        ]
-      },
-      {
-        include: 'node_modules/localforages'
-      }
-    ),
-    resolve({
-      jsnext: true,
-      main: true,
-      browser: true,
-    }),
+const banner = `/*!
+ * @muffin/element v${process.env.npm_package_version}
+ * Footloose Labs — ${new Date().getFullYear()}
+ */`;
+
+const plugins = [
+    resolve({ browser: true, preferBuiltins: false }),
+    commonjs(),
     replace({
-      ENV: JSON.stringify(process.env.NODE_ENV || 'development'),
-    }),
-    license({
-      banner: {
-        commentStyle: 'regular', // The default
-        content: {
-          file: path.join(__dirname, 'banner.txt'),
+        'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
+        preventAssignment: true
+    })
+];
+
+export default [
+    // IIFE — CDN / script tag
+    {
+        input: 'src/main.js',
+        output: {
+            file: 'dist/element.min.js',
+            format: 'iife',
+            name: 'MuffinElement',
+            exports: 'named',
+            banner,
+            sourcemap: isProd ? false : 'inline'
         },
-      },
-    }),
-    (process.env.NODE_ENV === 'production' && uglify()),
-  ],
-};
+        plugins: [...plugins, isProd && terser()].filter(Boolean)
+    },
+
+    // ESM — for bundlers (Vite, Rollup consumers)
+    {
+        input: 'src/main.js',
+        output: {
+            file: 'dist/element.esm.js',
+            format: 'esm',
+            banner
+        },
+        plugins: [...plugins, isProd && terser()].filter(Boolean)
+    }
+];
