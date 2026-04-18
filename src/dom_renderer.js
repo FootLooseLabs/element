@@ -176,7 +176,11 @@ const DOMRendererMethods = {
         this.__patchUnequalAttributes(root1, root2);
 
         if (root1.children.length === 0 || root2.children.length === 0) {
-            root2.replaceWith(root1);
+            // Never replace a focused element — attributes were already patched above.
+            // Replacing document.activeElement destroys focus (standard reconciler behaviour).
+            if (root2 !== document.activeElement) {
+                root2.replaceWith(root1);
+            }
             return;
         }
 
