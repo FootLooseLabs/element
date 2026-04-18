@@ -49,6 +49,7 @@ class DOMComponent extends HTMLElement {
         const _this = this;
         return new Proxy(initial, {
             set(target, key, value) {
+                if (target[key] === value) return true; // no render for same-value writes
                 target[key] = value;
                 _this._scheduleRender();
                 return true;
@@ -130,8 +131,6 @@ class DOMComponent extends HTMLElement {
             console.warn(`Muffin [${this.domElName}]: no markupFunc — rendering skipped`);
             return;
         }
-
-        this.shadow = this.attachShadow({ mode: opt.domMode || "open" });
 
         this._composeAncestry();
         this._initLifecycle(opt);
@@ -294,5 +293,19 @@ Object.defineProperty(DOMComponent, "compose", {
 
 // Mix in renderer, event binder, state machine
 Object.assign(DOMComponent.prototype, DOMRendererMethods, EventBinderMethods, StateMachineMethods);
+
+// v2 two-way binding helper — retained for backwards compatibility
+DOMComponent.prototype._binding = function(b) {
+    this.element   = b.element;
+    this.value     = b.object[b.property];
+    this.attribute = b.attribute;
+    const _this = this;
+    Object.defineProperty(b.object, b.property, {
+        get() { return _this.value; },
+        set(val) { _this.value = val; _this.element[_this.attribute] = val; }
+    });
+    b.object[b.property] = this.value;
+    this.element[this.attribute] = this.value;
+};
 
 export { DOMComponent, PostOffice, DataSource, DOMComponentRegistry };

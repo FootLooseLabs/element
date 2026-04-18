@@ -37,7 +37,8 @@ const StateMachineMethods = {
 
         this.current_state = stateName;
         this.uiVars.state = { name: stateName, meta: targetState };
-        // uiVars.state set triggers _scheduleRender automatically via Proxy
+
+        this.render(); // explicit — same as v2, not relying on proxy
 
         this.interface.dispatchMessage("state-change", {
             uiVars: this.uiVars,

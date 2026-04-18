@@ -1,6 +1,6 @@
 import { DefaultConfig } from "./config.js";
 import { DOMComponentRegistry } from "./dom_component_registry.js";
-import { stringToHTMLFrag, deepCountChildElements } from "./utils.js";
+import { stringToHTMLFrag } from "./utils.js";
 
 /**
  * DOM rendering methods mixed into DOMComponent.
@@ -26,10 +26,11 @@ const DOMRendererMethods = {
 
     _evalRenderIf(expr) {
         try {
-            // Scope is limited to uiVars, data, and stores — no global access
+            // `this` (component instance) available for v2-style expressions like this.uiVars.x
+            // Named params uiVars/data/stores also available for shorter v3-style expressions
             // eslint-disable-next-line no-new-func
             return (new Function('uiVars', 'data', 'stores', `return !!(${expr})`))
-                (this.uiVars, this.data, this._getStoreSnapshot());
+                .call(this, this.uiVars, this.data, this._getStoreSnapshot());
         } catch(e) {
             console.warn(`Muffin: render-if evaluation error for expression "${expr}" —`, e);
             return true; // fail open: show the element rather than hide it unexpectedly
@@ -153,11 +154,14 @@ const DOMRendererMethods = {
 
     __isDOMTreeEqual(node1, node2) {
         if (node1.childElementCount !== node2.childElementCount) return false;
-        if (deepCountChildElements(node1) !== deepCountChildElements(node2)) return false;
 
         for (let i = 0; i < node1.children.length; i++) {
             const c1 = node1.children[i];
             const c2 = node2.children[i];
+            // Skip child Muffin components — they manage their own DOM subtree.
+            // The old deepCountChildElements check incorrectly counted across component
+            // boundaries (unrendered tag = 0 children, rendered output = N children),
+            // always forcing a full replacement when any child component was present.
             if (c1.constructedFrom || c2.constructedFrom) continue;
             if (c1.childElementCount !== c2.childElementCount) return false;
         }
@@ -260,8 +264,17 @@ const DOMRendererMethods = {
         const childCmpsInFrag = this._renderedFrag.querySelectorAll(selector);
 
         childCmpsInFrag.forEach(_fragChild => {
+            // Only preserve named (childscoped) child components.
+            // Components without childscope (e.g. leaf/presentational components like
+            // lucide-icon) are cheap to recreate and have no parent-managed scope slot —
+            // trying to preserve them by domElName alone incorrectly maps every instance
+            // of the same type to the same first DOM node.
+            const fragScope = _fragChild.getAttribute('childscope');
+            if (!fragScope) return;
+
             const _domChild = childCmpsInDOM.find(c =>
-                c.constructedFrom?.domElName === _fragChild.tagName.toLowerCase()
+                c.constructedFrom?.domElName === _fragChild.tagName.toLowerCase() &&
+                c.constructedFrom?.getAttribute('childscope') === fragScope
             );
             if (_domChild) _fragChild.replaceWith(_domChild);
         });

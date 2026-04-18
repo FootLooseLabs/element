@@ -49,13 +49,19 @@ class DOMComponentRegistry {
 		}else{
 			var webCompDomName = webComp.domElName;
 		}
+		// Add the registry entry BEFORE customElements.define so that when
+		// define() triggers an immediate upgrade (connectedCallback → _composeAncestry
+		// → DOMComponentRegistry.update), the entry already exists and no 1-second
+		// fallback wait is needed.  Without this, root components like <app-ui>
+		// weren't registered for ~1 s, causing getParent() to return undefined on
+		// the initial route fire (DOMContentLoaded fires < 1 s after page load).
+		DOMComponentRegistry.add(webComp);
 		try{
 			customElements.define(webCompDomName, webComp);
 		}catch(e){
 			webComp.error = e;
 			console.log("imp:", e);
 		}
-		DOMComponentRegistry.add(webComp);
 		// if(webComp.register){
 		// 	webComp.register();
 		// }
