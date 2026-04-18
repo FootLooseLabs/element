@@ -199,7 +199,14 @@ const DOMRendererMethods = {
             }
 
             if (!this.__isDOMTreeEqual(_root1Child, _root2Child)) {
-                _root2Child.replaceWith(_root1Child);
+                // If the focused element lives somewhere inside this subtree, recurse
+                // surgically rather than replacing the whole subtree — the recursion will
+                // replace only the changed children while Fix 1 preserves the active input.
+                if (_root2Child.contains(document.activeElement)) {
+                    this.__findAndReplaceUnequalNodes(_root1Child, _root2Child);
+                } else {
+                    _root2Child.replaceWith(_root1Child);
+                }
             } else {
                 this.__findAndReplaceUnequalNodes(_root1Child, _root2Child);
             }
