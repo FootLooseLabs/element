@@ -213,7 +213,37 @@ const DOMRendererMethods = {
             this._processChildCmps();
         }
 
+        // If a focused input/textarea lives inside this component, record its
+        // value, cursor, and structural path so focus can be restored after the
+        // full DOM swap. Path is a list of child indices from cmpDomNode → activeEl.
+        const activeEl  = document.activeElement;
+        const saveFocus = cmpDomNode.contains(activeEl) &&
+                          (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA');
+        let savedValue, savedSel, fragTarget;
+        if (saveFocus) {
+            savedValue = activeEl.value;
+            savedSel   = [activeEl.selectionStart, activeEl.selectionEnd];
+            const path = [];
+            let node = activeEl;
+            while (node && node !== cmpDomNode) {
+                path.unshift(Array.from(node.parentNode.children).indexOf(node));
+                node = node.parentNode;
+            }
+            fragTarget = this._renderedFrag.firstElementChild;
+            for (const idx of path) {
+                fragTarget = fragTarget?.children[idx];
+                if (!fragTarget) break;
+            }
+        }
+
         cmpDomNode.replaceWith(this._renderedFrag);
+
+        if (saveFocus && fragTarget &&
+            (fragTarget.tagName === 'INPUT' || fragTarget.tagName === 'TEXTAREA')) {
+            fragTarget.value = savedValue;
+            fragTarget.focus();
+            try { fragTarget.setSelectionRange(savedSel[0], savedSel[1]); } catch(_) {}
+        }
     },
 
     __patchDOM() {
