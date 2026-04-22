@@ -115,6 +115,17 @@ class DOMComponent extends HTMLElement {
         }
     }
 
+    disconnectedCallback() {
+        if (this.onDisconnect) this.onDisconnect.call(this);
+
+        if (!this.attributes.childscope || !this.attributes.parent) return;
+        const key = this.attributes.childscope.value;
+        const parent = this.getParent();
+        if (!parent) return;
+        delete parent.composedScope[key];
+        parent.interface.dispatchMessage('child-disconnected', key);
+    }
+
     attributeChangedCallback() {
         this.render();
     }
