@@ -7,8 +7,12 @@ const EVENT_ATTRS = [
     { attr: "on-change",      event: "onchange"      },
     { attr: "on-input",       event: "oninput"        },
     { attr: "on-click",       event: "onclick"        },
+    { attr: "on-dblclick",    event: "ondblclick"     },
     { attr: "on-scroll",      event: "onscroll"       },
+    { attr: "on-keydown",     event: "onkeydown"      },
     { attr: "on-keyup",       event: "onkeyup"        },
+    { attr: "on-focus",       event: "onfocus"        },
+    { attr: "on-blur",        event: "onblur"         },
     { attr: "on-load",        event: "onload"         },
     { attr: "on-contextmenu", event: "oncontextmenu"  }
 ];
