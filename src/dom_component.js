@@ -104,10 +104,10 @@ class DOMComponent extends HTMLElement {
     _preInit() {
         this._setupDomContentLoadedCallback();
         this._setupAdvertisedInterface();
-        this._subscribeToStores();
     }
 
     connectedCallback() {
+        this._subscribeToStores();
         this.__init__(this.opt);
         if (this.onConnect) {
             this.switchToIdleState();
