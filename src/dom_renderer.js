@@ -53,6 +53,7 @@ const DOMRendererMethods = {
     // Public render() — cancels any pending microtask and fires immediately.
     // Backwards compatible: existing explicit render() calls still work.
     render() {
+        if (!this.markupFunc) return;
         this._renderScheduled = false;
         return this._doRender();
     },
