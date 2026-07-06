@@ -37,8 +37,13 @@ const EventBinderMethods = {
                         else console.warn(`Muffin: no method "${methodName}" on component`);
                     };
                     // For cached images the browser fires `load` before the handler is
-                    // attached (el.complete is already true). Fire it synthetically here.
-                    if (event === "onload" && el.complete === true) {
+                    // attached (el.complete is already true at fragment creation time).
+                    // Only fire synthetically on the FIRST render (component not yet in
+                    // the live DOM). On re-renders the img is already in the DOM and
+                    // its real load event will have already fired; firing again every
+                    // re-render would re-invoke the handler and trigger an infinite
+                    // render loop via uiVars (uiVars has no dirty-check).
+                    if (event === "onload" && el.complete === true && !_this._getDomNode()) {
                         el[event](new Event('load'));
                     }
                 }
