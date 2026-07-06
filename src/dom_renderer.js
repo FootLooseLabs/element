@@ -144,11 +144,20 @@ const DOMRendererMethods = {
 
     __patchUnequalAttributes(node1, node2) {
         if (node1.attributes === node2.attributes) return;
+
+        // Apply/update attributes present in the new render.
         Array.from(node1.attributes).forEach(attr => {
-            if (!node2.attributes[attr.name]) {
+            if (node2.getAttribute(attr.name) !== attr.value) {
                 node2.setAttribute(attr.name, attr.value);
-            } else if (node2.getAttribute(attr.name) !== attr.value) {
-                node2.setAttribute(attr.name, attr.value);
+            }
+        });
+
+        // Remove attributes from the live DOM that are absent from the new render.
+        // Skip data-state — it is set by the framework (not markupFunc) and must persist.
+        Array.from(node2.attributes).forEach(attr => {
+            if (attr.name === 'data-state') return;
+            if (!node1.hasAttribute(attr.name)) {
+                node2.removeAttribute(attr.name);
             }
         });
     },

@@ -36,6 +36,11 @@ const EventBinderMethods = {
                         if (_this[methodName]) _this[methodName].call(_this, el, ev);
                         else console.warn(`Muffin: no method "${methodName}" on component`);
                     };
+                    // For cached images the browser fires `load` before the handler is
+                    // attached (el.complete is already true). Fire it synthetically here.
+                    if (event === "onload" && el.complete === true) {
+                        el[event](new Event('load'));
+                    }
                 }
             });
         });
