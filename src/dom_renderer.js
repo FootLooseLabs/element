@@ -84,6 +84,7 @@ const DOMRendererMethods = {
         this.__processRootMarkup();
         this.__processStyleMarkup();
         this.__processRenderedFragEventListeners();
+        this.__stampRenderedAttrs();
         this.__patchDOM();
 
         DefaultConfig.DEBUG_SCOPE.debugLastRenderedCmp = this;
@@ -152,14 +153,28 @@ const DOMRendererMethods = {
             }
         });
 
-        // Remove attributes from the live DOM that are absent from the new render.
-        // Skip data-state — it is set by the framework (not markupFunc) and must persist.
-        Array.from(node2.attributes).forEach(attr => {
-            if (attr.name === 'data-state') return;
-            if (!node1.hasAttribute(attr.name)) {
-                node2.removeAttribute(attr.name);
+        // Remove attributes the previous render produced but this render no longer does
+        // (e.g. a conditional `disabled`). Attributes set imperatively — toggleRootAttr,
+        // toggleBtnBusyState, app code — were never in a render, so they are left alone.
+        // data-state is set by the framework, never by markupFunc, so it is never stamped.
+        const previouslyRendered = node2.__renderedAttrs;
+        if (previouslyRendered) {
+            for (const name of previouslyRendered) {
+                if (name !== 'data-state' && !node1.hasAttribute(name) && node2.hasAttribute(name)) {
+                    node2.removeAttribute(name);
+                }
             }
-        });
+        }
+        node2.__renderedAttrs = node1.__renderedAttrs;
+    },
+
+    // Record, on every element of the new render, which attributes markupFunc produced.
+    // A live node carries the stamp of the render it was patched from, so the patcher can
+    // tell rendered attributes (removable) from ones set imperatively (kept).
+    __stampRenderedAttrs() {
+        for (const el of this._renderedFrag.querySelectorAll('*')) {
+            el.__renderedAttrs = el.getAttributeNames();
+        }
     },
 
     __isDOMTreeEqual(node1, node2) {
