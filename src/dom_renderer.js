@@ -186,11 +186,14 @@ const DOMRendererMethods = {
         this.__patchUnequalAttributes(root1, root2);
 
         if (root1.children.length === 0 || root2.children.length === 0) {
-            // Never replace a focused element — attributes were already patched above.
-            // Replacing document.activeElement destroys focus (standard reconciler behaviour).
-            if (root2 !== document.activeElement) {
-                root2.replaceWith(root1);
+            // A field the user is typing in is kept in place (attributes were patched above)
+            // so its value, caret and IME state survive. Anything else is replaced; focus
+            // returns to the replacement if it is the same control.
+            if (root2 === document.activeElement &&
+                this.__isEditable(root2) && root1.tagName === root2.tagName) {
+                return;
             }
+            this.__replacePreservingFocus(root2, root1);
             return;
         }
 
@@ -209,13 +212,16 @@ const DOMRendererMethods = {
             }
 
             if (!this.__isDOMTreeEqual(_root1Child, _root2Child)) {
-                // If the focused element lives somewhere inside this subtree, recurse
-                // surgically rather than replacing the whole subtree — the recursion will
-                // replace only the changed children while Fix 1 preserves the active input.
-                if (_root2Child.contains(document.activeElement)) {
+                // Recurse instead of replacing only to protect a field the user is typing in,
+                // and only between nodes of the same tag. Recursing for any focused element
+                // (e.g. a just-clicked button) patched unrelated markup into the old nodes and
+                // left the focused node grafted into the new view.
+                const active = document.activeElement;
+                if (_root2Child.contains(active) && this.__isEditable(active) &&
+                    _root1Child.tagName === _root2Child.tagName) {
                     this.__findAndReplaceUnequalNodes(_root1Child, _root2Child);
                 } else {
-                    _root2Child.replaceWith(_root1Child);
+                    this.__replacePreservingFocus(_root2Child, _root1Child);
                 }
             } else {
                 this.__findAndReplaceUnequalNodes(_root1Child, _root2Child);
@@ -230,37 +236,67 @@ const DOMRendererMethods = {
             this._processChildCmps();
         }
 
-        // If a focused input/textarea lives inside this component, record its
-        // value, cursor, and structural path so focus can be restored after the
-        // full DOM swap. Path is a list of child indices from cmpDomNode → activeEl.
-        const activeEl  = document.activeElement;
-        const saveFocus = cmpDomNode.contains(activeEl) &&
-                          (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA');
-        let savedValue, savedSel, fragTarget;
-        if (saveFocus) {
-            savedValue = activeEl.value;
-            savedSel   = [activeEl.selectionStart, activeEl.selectionEnd];
-            const path = [];
-            let node = activeEl;
-            while (node && node !== cmpDomNode) {
-                path.unshift(Array.from(node.parentNode.children).indexOf(node));
-                node = node.parentNode;
-            }
-            fragTarget = this._renderedFrag.firstElementChild;
-            for (const idx of path) {
-                fragTarget = fragTarget?.children[idx];
-                if (!fragTarget) break;
-            }
-        }
-
+        // Full swap: snapshot focus first, then return it to the same control in the new tree.
+        const focus   = this.__captureFocus(cmpDomNode);
+        const newRoot = this._renderedFrag.firstElementChild;
         cmpDomNode.replaceWith(this._renderedFrag);
+        this.__restoreFocus(focus, newRoot);
+    },
 
-        if (saveFocus && fragTarget &&
-            (fragTarget.tagName === 'INPUT' || fragTarget.tagName === 'TEXTAREA')) {
-            fragTarget.value = savedValue;
-            fragTarget.focus();
-            try { fragTarget.setSelectionRange(savedSel[0], savedSel[1]); } catch(_) {}
+    // ─── Focus preservation across node swaps ────────────────────────────────
+
+    __isEditable(el) {
+        if (!el) return false;
+        const tag = el.tagName;
+        return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || el.isContentEditable === true;
+    },
+
+    // If focus lives inside `container`, record where (child-index path) and, for
+    // editable fields, the value and selection.
+    __captureFocus(container) {
+        const active = document.activeElement;
+        if (!active || active === document.body || !container.contains(active)) return null;
+
+        const path = [];
+        for (let node = active; node !== container; node = node.parentElement) {
+            path.unshift(Array.prototype.indexOf.call(node.parentElement.children, node));
         }
+
+        const snapshot = { active, path, editable: this.__isEditable(active) };
+        if (snapshot.editable && 'value' in active) {
+            snapshot.value = active.value;
+            try { snapshot.selection = [active.selectionStart, active.selectionEnd]; } catch(_) {}
+        }
+        return snapshot;
+    },
+
+    // Return focus to the node at the same path in `newRoot` — but only if it is the
+    // same control (same tag; for non-editables also the same on-click handler).
+    // Otherwise focus is left where the browser put it rather than jumping to an unrelated node.
+    __restoreFocus(snapshot, newRoot) {
+        if (!snapshot || !newRoot || !newRoot.isConnected) return;
+        if (snapshot.active.isConnected) return; // focused node survived — nothing was lost
+
+        let target = newRoot;
+        for (const idx of snapshot.path) {
+            target = target.children[idx];
+            if (!target) return;
+        }
+        if (target.tagName !== snapshot.active.tagName) return;
+        if (!snapshot.editable &&
+            target.getAttribute('on-click') !== snapshot.active.getAttribute('on-click')) return;
+
+        if (snapshot.value !== undefined && 'value' in target) target.value = snapshot.value;
+        target.focus({ preventScroll: true });
+        if (snapshot.selection && snapshot.selection[0] != null) {
+            try { target.setSelectionRange(snapshot.selection[0], snapshot.selection[1]); } catch(_) {}
+        }
+    },
+
+    __replacePreservingFocus(oldNode, newNode) {
+        const focus = this.__captureFocus(oldNode);
+        oldNode.replaceWith(newNode);
+        this.__restoreFocus(focus, newNode);
     },
 
     __patchDOM() {
