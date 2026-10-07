@@ -1,6 +1,6 @@
 {
   "name": "@muffin/element",
-  "version": "0.9.4",
+  "version": "0.9.5",
   "description": "Lightweight, composable frontend framework. Web Components based.",
   "main": "src/main.js",
   "module": "dist/element.esm.js",
