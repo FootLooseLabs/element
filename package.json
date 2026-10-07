@@ -1,6 +1,6 @@
 {
   "name": "@muffin/element",
-  "version": "0.9.3",
+  "version": "0.9.4",
   "description": "Lightweight, composable frontend framework. Web Components based.",
   "main": "src/main.js",
   "module": "dist/element.esm.js",
@@ -19,7 +19,12 @@
     "build": "NODE_ENV=production rollup -c",
     "build:dev": "rollup -c"
   },
-  "keywords": ["frontend", "web-components", "spa", "vanilla"],
+  "keywords": [
+    "frontend",
+    "web-components",
+    "spa",
+    "vanilla"
+  ],
   "author": "footloose.io",
   "license": "Copyright © Footloose Labs INC.",
   "dependencies": {
@@ -30,10 +35,10 @@
     "kill-port": "^2.0.1"
   },
   "devDependencies": {
-    "rollup": "^4.0.0",
-    "@rollup/plugin-node-resolve": "^15.0.0",
     "@rollup/plugin-commonjs": "^25.0.0",
+    "@rollup/plugin-node-resolve": "^15.0.0",
+    "@rollup/plugin-replace": "^5.0.0",
     "@rollup/plugin-terser": "^0.4.0",
-    "@rollup/plugin-replace": "^5.0.0"
+    "rollup": "^4.0.0"
   }
 }
