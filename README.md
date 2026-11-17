@@ -124,19 +124,19 @@ Client-side routing for single-page applications with nested route support.
 </div>
 
 <script>
-    Muffin._router = new Muffin.Router();
-    document.addEventListener('DOMContentLoaded', () => {
-        Muffin._router.go('home');
-    });
+    Muffin._router = new Muffin.Router({ routeDelimiter: '/' });
+    Muffin._router.addRouteConfig([{ name: 'home', defaultRoute: true }, { name: 'about' }]);
+    // it starts itself once the page has loaded: the route in the address, or the default one
 </script>
 ```
 
 **Router Features:**
-- Declarative route definitions with `route` attributes
-- Nested routing with `sub-route`
-- URL parameter handling
-- History API integration
-- Programmatic navigation
+- The address is the one source of truth: path (`/about?x=1`), query (`?about&x=1`) or hash (`#about&x=1`) style, below a `basePath`
+- Declarative route elements (`route` attributes), nested ones written with their ancestors' names
+- Params as a standard query; `href(name, params)` for links, `match(url)` to read an address
+- Old path-style addresses (`/about&x=1`) read and rewritten in place
+
+See `docs/api/router.md`.
 
 ### 4. Real-time Communication (PostOffice)
 
@@ -382,12 +382,6 @@ The framework exposes the `window.Muffin` namespace containing:
 - `window.Muffin.Lexeme` - Message structure system
 - `window.Muffin.Introspector` - Component introspection utilities
 - `window.Muffin.DOMComponentRegistry` - Component registration system
-
-Legacy globals (for backward compatibility):
-- `window.Router` - Alias for `window.Muffin.Router`
-- `window.PostOffice` - Alias for `window.Muffin.PostOffice`
-- `window.DataSource` - Alias for `window.Muffin.DataSource`
-- `window.DOMComponent` - Alias for `window.Muffin.DOMComponent`
 
 ---
 
