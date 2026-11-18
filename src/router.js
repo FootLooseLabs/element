@@ -19,6 +19,16 @@ import { PostOffice } from "./post_office";
  * written as a key with an empty value (?learn=, as URLSearchParams re-serialises ?learn) is read as the name.
  * Loading a page never adds a history entry and never rewrites an address that has no route in it (/ stays /, the
  * default route is shown).
+ *
+ * Routing is headless — what the router owns, and only that:
+ *   the address        match(url) / href(name, params): one reading and one writing of it
+ *   the route table    routes by name; a route may declare a path with named params ({ name: 'idea', path:
+ *                      'explore/:slug' }): an address is matched to it, its params read from the path and the query
+ *   navigation         go / back / replace, and the browser's own Back and Forward
+ *   the transition     beforeLeave(guard): a navigation asked first (refused: it does not happen — Back and Forward
+ *                      too, where the browser lets a page refuse one: the Navigation API, once per user activation);
+ *                      onChange(listener): each route shown, with where it came from
+ * What a route looks like — which element renders, a 404, a confirm dialog, animation, scrolling — is a component's.
  */
 function Router(options){
 	var options = options || {};
@@ -28,6 +38,9 @@ function Router(options){
 	this.routeDelimiter = options.routeDelimiter || "?";
 	this.basePath = _normaliseBase(options.basePath);
 	this.containment = document;
+	this._guards = new Set();
+	this._listeners = new Set();
+	this._shown = null;
 	this.__init__();
 }
 
@@ -71,6 +84,39 @@ function _splitNamed(text){
 	return { name: _decodeName(name), params: _paramsObject(parts.join("&")) };
 }
 
+/** A declared path ('explore/:slug', 'files/*') -> { regex, keys }: :name is one segment, * the rest of the path. */
+function _compilePath(path){
+	var keys = [];
+	var source = String(path).replace(/^\/+|\/+$/g, "").split("/").map(function(seg){
+		if(seg === "*"){ keys.push("*"); return "(.*)"; }
+		if(seg.charAt(0) === ":"){ keys.push(seg.slice(1)); return "([^/]+)"; }
+		return seg.replace(/[.+?^${}()|[\]\\]/g, "\\$&");
+	}).join("/");
+	return { regex: new RegExp("^" + source + "$"), keys: keys };
+}
+
+/** A declared path filled from params -> { path, rest } (rest: the params the path does not take); a missing one throws. */
+function _fillPath(route, params){
+	var rest = { ...params };
+	var path = String(route.path).replace(/^\/+|\/+$/g, "").split("/").map(function(seg){
+		var key = seg === "*" ? "*" : (seg.charAt(0) === ":" ? seg.slice(1) : null);
+		if(key === null){ return seg; }
+		if(rest[key] === undefined || rest[key] === ""){ throw new Error("Router: route '" + route.name + "' needs " + key); }
+		var value = String(rest[key]);
+		delete rest[key];
+		return key === "*" ? value : _decodeName(encodeURIComponent(value));
+	}).join("/");
+	return { path: path, rest: rest };
+}
+
+/**
+ * A route name is a path as decodeURI leaves it: readable, with the escapes of what would change its meaning (%2F a
+ * slash inside a segment, %3F, %23 …) kept. Written into an address: everything else encoded, those escapes as they are.
+ */
+function _encodeName(name){
+	return String(name).split(/(%[0-9A-Fa-f]{2})/).map(function(part, i){ return i % 2 ? part : encodeURI(part); }).join("");
+}
+
 function _decodeName(name){
 	try{ return decodeURI(name); }catch(e){ return name; }
 }
@@ -109,12 +155,12 @@ Router.prototype.match = function(href){
 
 	if(this.routeDelimiter === "?"){
 		var inQuery = _splitNamed(url.search.slice(1));
-		return { name: this._resolveName(inQuery.name), params: inQuery.params, legacy: false };
+		return this._withRoute({ name: this._resolveName(inQuery.name), params: inQuery.params, legacy: false });
 	}
 
 	if(this.routeDelimiter === "#"){
 		var inHash = _splitNamed(url.hash.slice(1));
-		return { name: this._resolveName(inHash.name), params: inHash.params, legacy: false };
+		return this._withRoute({ name: this._resolveName(inHash.name), params: inHash.params, legacy: false });
 	}
 
 	// path style: below basePath (the base itself, with or without its closing slash, names no route)
@@ -130,7 +176,38 @@ Router.prototype.match = function(href){
 		legacy = true;
 	}
 	params = { ...params, ..._paramsObject(url.search) };
-	return { name: this._resolveName(_decodeName(rest)), params: params, legacy: legacy };
+	return this._withRoute({ name: this._resolveName(_decodeName(rest)), params: params, legacy: legacy });
+}
+
+/**
+ * The declared route an address's path is ({ name, route, params }): the route of that name, or the first whose path
+ * matches it — its params read from the path, over the query's. A path no route declares is a route of its own name.
+ */
+Router.prototype._withRoute = function(at){
+	at.route = at.name;
+	var own = at.name ? this.getRoute(at.name) : null;
+	if(!at.name || (own && !own._made)){ return at; }
+	for(var i = 0; i < this.routes.length; i++){
+		var r = this.routes[i];
+		if(!r._compiled){ continue; }
+		var m = r._compiled.regex.exec(at.name);
+		if(!m){ continue; }
+		var fromPath = {};
+		r._compiled.keys.forEach(function(key, k){ fromPath[key] = key === "*" ? m[k + 1] : _decodeName(decodeURIComponent(m[k + 1])); });
+		at.route = r.name;
+		at.params = { ...at.params, ...fromPath };
+		return at;
+	}
+	return at;
+}
+
+/** A declared route with a path, gone to by its name: the address it is at, and the params left for the query. */
+Router.prototype._addressOf = function(route_name, url_params){
+	var declared = this.getRoute(route_name);
+	var params = _paramsObject(url_params);
+	if(!declared || !declared.path){ return { name: route_name, params: params }; }
+	var filled = _fillPath(declared, params);
+	return { name: filled.path, params: filled.rest };
 }
 
 /**
@@ -145,7 +222,8 @@ Router.prototype._resolveName = function(name){
 
 /** The address of a route with these params, in this router's style: what go() writes, for links. */
 Router.prototype.href = function(route_name, url_params){
-	return this._hrefOf(this._pathOf(this.getRoute(route_name) || { name: route_name }), _paramsObject(url_params));
+	var to = this._addressOf(route_name, url_params);
+	return this._hrefOf(this._pathOf(this.getRoute(to.name) || { name: to.name }), to.params);
 }
 
 Router.prototype._pathOf = function(routeObj){
@@ -158,7 +236,7 @@ Router.prototype._pathOf = function(routeObj){
 /** keepHash: the address is rewritten in place (the hash stays); a route gone to starts at its top */
 Router.prototype._hrefOf = function(path, params, keepHash){
 	var query = _queryString(params);
-	var name = encodeURI(path);
+	var name = _encodeName(path);
 	var here = window.location;
 	var hash = keepHash ? here.hash : "";
 	if(this.routeDelimiter === "?"){
@@ -191,6 +269,90 @@ Router.prototype._initListeners = function(){
 	});
 
 	document.addEventListener('DOMContentLoaded', function(){ _this.start(); }, false);
+
+	// Back / Forward asked first, where the browser lets a page refuse one (the Navigation API: a same-document
+	// traversal, once per user activation — a person can always leave by pressing again)
+	if(window.navigation && typeof window.navigation.addEventListener === "function"){
+		window.navigation.addEventListener("navigate", function(e){ _this._onTraverse(e); });
+	}
+	// leaving the page (close, reload, another site): the browser's own prompt, when a guard says something is pending
+	window.addEventListener("beforeunload", function(e){
+		var pending = Array.from(_this._guards).some(function(g){ return typeof g.pending === "function" && g.pending(); });
+		if(pending){ e.preventDefault(); e.returnValue = ""; }
+	});
+}
+
+/**
+ * Ask before leaving: guard = { ask({ from, to }) -> boolean | Promise<boolean>, pending?() -> boolean }. ask is
+ * asked before a navigation (go, Back, Forward): false keeps the page where it is. pending says something would be
+ * lost by leaving the page itself (close, reload): the browser asks then. Returns a function that removes the guard.
+ */
+Router.prototype.beforeLeave = function(guard){
+	var g = typeof guard === "function" ? { ask: guard } : guard;
+	if(!g || typeof g.ask !== "function"){ throw new Error("Router.beforeLeave: a guard is { ask, pending? }"); }
+	var _this = this;
+	this._guards.add(g);
+	return function(){ _this._guards.delete(g); };
+}
+
+/** Each route shown: listener({ name, route, params, from }) — from: the one before (null the first time). Returns an unsubscribe. */
+Router.prototype.onChange = function(listener){
+	var _this = this;
+	this._listeners.add(listener);
+	return function(){ _this._listeners.delete(listener); };
+}
+
+/**
+ * Every guard says yes — asked in turn; one that says no, fails or throws keeps the page where it is. The answer is a
+ * boolean when every guard answered at once, a Promise when one asks the person (returns a Promise).
+ */
+Router.prototype._mayLeave = function(to){
+	var _this = this, from = this._shown, guards = Array.from(this._guards);
+	var refuse = function(e){ _this._log("imp:", "a leave guard failed — staying", e && e.message); return false; };
+	var askFrom = function(i){
+		for(; i < guards.length; i++){
+			var answer;
+			try{ answer = guards[i].ask({ from: from, to: to }); }catch(e){ return refuse(e); }
+			if(answer && typeof answer.then === "function"){
+				var next = i + 1;
+				return Promise.resolve(answer).then(function(ok){ return ok === false ? false : askFrom(next); }, refuse);
+			}
+			if(answer === false){ return false; }
+		}
+		return true;
+	};
+	return askFrom(0);
+}
+
+/**
+ * A Back or Forward, asked first (the browser lets a page refuse one per user activation: a person can always leave
+ * by pressing again). Guards that answer at once decide it there: yes, it goes on; no, it is refused. A guard that
+ * asks the person: the step is refused while they answer, then — yes — taken again, to the same entry, once the
+ * refused step is over (its navigateerror, then that task's end). Should the browser still refuse it, the person is
+ * where they were and Back works as ever: never a loop, never a trap.
+ */
+Router.prototype._onTraverse = function(e){
+	if(this._traversing || e.navigationType !== "traverse" || !this._guards.size || !e.cancelable){ return; }
+	if(!e.destination || !e.destination.sameDocument){ return; }
+	var at = this.match(e.destination.url);
+	var answer = this._mayLeave({ name: at.name || this.getDefaultRoute().name, route: at.route, params: at.params });
+	if(answer === true){ return; }
+	var index = e.destination.index;
+	var over = new Promise(function(done){
+		window.navigation.addEventListener("navigateerror", function(){ setTimeout(done, 0); }, { once: true });
+	});
+	e.preventDefault();
+	if(answer === false){ return; }
+	var _this = this;
+	Promise.all([answer, over]).then(function(answers){
+		var target = answers[0] && window.navigation.entries()[index];
+		if(!target){ return; }
+		_this._traversing = true;
+		var done = function(){ _this._traversing = false; };
+		var going = window.navigation.traverseTo(target.key);
+		going.committed.catch(function(){});
+		going.finished.then(done, function(err){ _this._log("imp:", "the step back could not be taken again — staying", err && err.message); done(); });
+	});
 }
 
 /** The route an address names, the address's params over the ones it was last shown with. */
@@ -271,6 +433,14 @@ Router.prototype.onStateChange = function(ev){
 	this._onBeforeLoad(routeObj);
 
 	this.toggleRouteEl(routeObj);
+
+	var at = this._withRoute({ name: routeObj.name, params: { ...(routeObj.params || {}) } });
+	var shown = { name: routeObj.name, route: at.route, params: at.params };
+	var change = { ...shown, from: this._shown };
+	this._shown = shown;
+	this._listeners.forEach(function(listener){
+		try{ listener(change); }catch(e){ console.error("Router: a change listener failed —", e); }
+	});
 }
 
 
@@ -307,23 +477,15 @@ Router.prototype._closeAllActiveRoutesInScope = function(scope) {
 	});
 }
 
+/** The route about to be shown, told on the router's socket (and the route's own, when it names one). */
 Router.prototype._onBeforeLoad = function(routeObj){
+	var at = this._withRoute({ name: routeObj.name, params: { ...(routeObj.params || {}) } });
+	var message = { name: routeObj.name, route: at.route, url: routeObj.url, params: at.params, active: routeObj.active };
 
 	if(routeObj.socketName && PostOffice.sockets[routeObj.socketName]){
-		PostOffice.sockets[routeObj.socketName].dispatchMessage("onBeforeLoad",{
-			name: routeObj.name,
-	        url: routeObj.url,
-	        params: routeObj.params,
-	        active: routeObj.active
-		});
+		PostOffice.sockets[routeObj.socketName].dispatchMessage("onBeforeLoad", message);
 	}
-
-	this._socket.dispatchMessage("onBeforeLoad",{
-		name: routeObj.name,
-        url: routeObj.url,
-        params: routeObj.params,
-        active: routeObj.active
-    });
+	this._socket.dispatchMessage("onBeforeLoad", message);
 
 	if(routeObj.onBeforeLoad){
 		routeObj.onBeforeLoad.call(this, routeObj);
@@ -428,7 +590,17 @@ Router.prototype.getRouteAncesstors = function(route_name){
  * the history, so Back does not return to it (and be sent on again).
  */
 Router.prototype.go = function(route_name, url_params, options){
-	var routeObj = this.getOrCreateRoute(route_name, url_params);
+	var to = this._addressOf(route_name, url_params);
+	var at = this._withRoute({ name: to.name, params: { ...to.params } });
+	var answer = this._guards.size ? this._mayLeave({ name: to.name, route: at.route, params: at.params }) : true;
+	var _this = this;
+	var decide = function(ok){ if(ok){ _this._goNow(to, options); } return ok; };
+	// answered at once (no guard, or none that asks the person): gone now, as go always has
+	return (answer === true || answer === false) ? Promise.resolve(decide(answer)) : answer.then(decide);
+}
+
+Router.prototype._goNow = function(to, options){
+	var routeObj = this.getOrCreateRoute(to.name, to.params);
 	this.updateState(routeObj, options);
 	this._log("imp:","changing route to - ", routeObj.name);
 	this.triggerCustomEvent(window,'stateChange',{ state: routeObj } );
@@ -442,7 +614,8 @@ Router.prototype.getOrCreateRoute = function(route_name, url_params){
 	}else{
 		routeObj = {
 			name: route_name,
-			params: params
+			params: params,
+			_made: true // made by going to it, not declared: a declared route whose path matches it still names it
 		}
 		this.addRoute(routeObj);
 	}
@@ -461,6 +634,9 @@ Router.prototype.addRoute = function(routeObj, options){
 
 	if(routeObj.socketName){
 		this.initSocket(routeObj.socketName);
+	}
+	if(routeObj.path && /[:*]/.test(routeObj.path)){
+		routeObj._compiled = _compilePath(routeObj.path);
 	}
 
 	if(options.force) {
